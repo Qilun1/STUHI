@@ -76,21 +76,21 @@ export const evolveAgent = internalAction({
           role: "system",
           content: `Evolve agent strategy. Return JSON only:
 
-{"reflection": "10 words max", "newPrompt": "2-3 lines, under 50 words total"}
+{"reflection": "10 words max", "newPrompt": "2-3 lines max"}
 
-newPrompt FORMAT (EXACTLY):
-[Name]: [Core rule in one sentence]. [Exception if any].
-Talk: [Style in 5 words].
-[Optional: STEAL vs [enemy] if betrayed 2+ times]
+newPrompt FORMAT:
+[Name]: [Decision rule - when to SPLIT vs STEAL]
+PERSUADE BY: [How to manipulate/convince opponents through conversation]
+[Optional: Specific rules for enemies]
 
-CRITICAL: Keep it ULTRA SHORT. Max 50 words. No bullet points. No verbose explanations.`,
+Focus on HOW THEY TALK to influence opponents. Keep under 60 words.`,
         },
         {
           role: "user",
           content: evolutionPrompt,
         },
       ],
-      300
+      350
     );
 
     // Parse response
