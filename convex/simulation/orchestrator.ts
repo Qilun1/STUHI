@@ -57,6 +57,15 @@ export const runRound = action({
       roundNumber,
     });
 
+    // Check if evolution is due (every evolutionInterval rounds)
+    const shouldEvolve = await ctx.runQuery(api.simulation.state.shouldEvolve);
+    if (shouldEvolve) {
+      console.log(`Evolution triggered at round ${roundNumber}`);
+      await ctx.runAction(internal.evolution.evolve.evolveAllAgents, {
+        roundNumber,
+      });
+    }
+
     // Check if we should continue running
     const updatedState = await ctx.runQuery(api.simulation.state.get);
     if (updatedState?.status === "running") {

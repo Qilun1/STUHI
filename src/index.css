@@ -1,24 +1,24 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
-@import "@fontsource/jetbrains-mono/700.css";
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
-/* Terminal Noir Theme - Always dark */
+/* Monochrome Theme - Black & White */
 @theme inline {
-  /* No border radius - brutalist style */
-  --radius: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
-  --radius-4xl: 0px;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 24px;
 
   /* Shadcn variable mappings */
   --color-background: var(--background);
@@ -40,74 +40,74 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Custom STUHI colors */
-  --color-void: #0a0a0a;
-  --color-surface: #141414;
-  --color-elevated: #1a1a1a;
-  --color-split: #00ff88;
-  --color-steal: #ff3366;
-  --color-negotiate: #ffd700;
-  --color-evolve: #9d4edd;
+  /* Monochrome palette */
+  --color-void: #000000;
+  --color-surface: #0a0a0a;
+  --color-elevated: #141414;
+  --color-split: #ffffff;
+  --color-steal: #666666;
+  --color-negotiate: #888888;
+  --color-evolve: #aaaaaa;
 
-  /* Agent accent colors */
-  --color-agent-diplomat: #4ade80;
-  --color-agent-shark: #f43f5e;
-  --color-agent-saint: #fbbf24;
-  --color-agent-grudger: #8b5cf6;
-  --color-agent-analyst: #06b6d4;
-  --color-agent-charmer: #ec4899;
-  --color-agent-paranoid: #64748b;
-  --color-agent-healer: #22d3ee;
-  --color-agent-wildcard: #f97316;
-  --color-agent-mirror: #a3e635;
+  /* All agents use grayscale */
+  --color-agent-diplomat: #ffffff;
+  --color-agent-shark: #e0e0e0;
+  --color-agent-saint: #c0c0c0;
+  --color-agent-grudger: #a0a0a0;
+  --color-agent-analyst: #909090;
+  --color-agent-charmer: #808080;
+  --color-agent-paranoid: #707070;
+  --color-agent-healer: #606060;
+  --color-agent-wildcard: #505050;
+  --color-agent-mirror: #404040;
 
   /* Fonts */
-  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
-  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-display: "Inter", system-ui, sans-serif;
 }
 
-/* Force dark mode - Terminal Noir only */
+/* Pure black & white theme */
 :root {
-  --background: #0a0a0a;
-  --foreground: #e5e5e5;
-  --card: #141414;
-  --card-foreground: #e5e5e5;
-  --popover: #1a1a1a;
-  --popover-foreground: #e5e5e5;
-  --primary: #00ff88;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #e5e5e5;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0a0a0a;
+  --card-foreground: #ffffff;
+  --popover: #0a0a0a;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #ffffff;
   --muted: #1a1a1a;
   --muted-foreground: #666666;
   --accent: #1a1a1a;
-  --accent-foreground: #e5e5e5;
-  --destructive: #ff3366;
-  --border: #333333;
-  --input: #1a1a1a;
-  --ring: #00ff88;
+  --accent-foreground: #ffffff;
+  --destructive: #888888;
+  --border: #222222;
+  --input: #141414;
+  --ring: #ffffff;
 }
 
-/* Dark class for shadcn compatibility */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #e5e5e5;
-  --card: #141414;
-  --card-foreground: #e5e5e5;
-  --popover: #1a1a1a;
-  --popover-foreground: #e5e5e5;
-  --primary: #00ff88;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #e5e5e5;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0a0a0a;
+  --card-foreground: #ffffff;
+  --popover: #0a0a0a;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #ffffff;
   --muted: #1a1a1a;
   --muted-foreground: #666666;
   --accent: #1a1a1a;
-  --accent-foreground: #e5e5e5;
-  --destructive: #ff3366;
-  --border: #333333;
-  --input: #1a1a1a;
-  --ring: #00ff88;
+  --accent-foreground: #ffffff;
+  --destructive: #888888;
+  --border: #222222;
+  --input: #141414;
+  --ring: #ffffff;
 }
 
 @layer base {
@@ -117,73 +117,62 @@
 
   html {
     color-scheme: dark;
+    font-size: 14px;
   }
 
   body {
-    @apply bg-background text-foreground font-mono antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "liga" 1, "calt" 1;
-  }
-
-  /* Force all borders to be 2px - brutalist */
-  .border,
-  [class*="border-"] {
-    border-width: 2px;
-  }
-
-  /* No rounded corners anywhere */
-  * {
-    border-radius: 0 !important;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
   }
 }
 
 /* Custom utility classes */
 @layer utilities {
-  /* Text colors */
+  /* Monochrome text - split = white, steal = gray */
   .text-split {
-    color: var(--color-split);
+    color: #ffffff;
   }
   .text-steal {
-    color: var(--color-steal);
+    color: #666666;
   }
   .text-negotiate {
-    color: var(--color-negotiate);
+    color: #888888;
   }
   .text-evolve {
-    color: var(--color-evolve);
+    color: #aaaaaa;
   }
 
   /* Background colors */
   .bg-void {
-    background-color: var(--color-void);
+    background-color: #000000;
   }
   .bg-surface {
-    background-color: var(--color-surface);
+    background-color: #0a0a0a;
   }
   .bg-elevated {
-    background-color: var(--color-elevated);
+    background-color: #141414;
   }
 
-  /* Flicker animation for betrayal alerts */
-  @keyframes flicker {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+  /* Subtle glow - white only */
+  .glow-split {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  .glow-steal {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
   }
 
-  .animate-flicker {
-    animation: flicker 0.15s steps(2) 3;
-  }
-
-  /* Pulse animation for updates */
-  @keyframes pulse-fast {
+  /* Animations */
+  @keyframes subtle-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
   }
 
-  .animate-pulse-fast {
-    animation: pulse-fast 0.3s ease-in-out;
+  .animate-subtle-pulse {
+    animation: subtle-pulse 2s ease-in-out infinite;
   }
 
-  /* Typing cursor */
   @keyframes blink {
     0%, 50% { opacity: 1; }
     51%, 100% { opacity: 0; }
@@ -193,33 +182,50 @@
     animation: blink 1s step-end infinite;
   }
 
-  /* Display font for headers */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.15s ease-out;
+  }
+
   .font-display {
     font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
 }
 
-/* Scrollbar styling - Terminal aesthetic */
+/* Minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-void);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #333333;
-  border: 1px solid #444444;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #444444;
 }
 
-/* Selection styling */
 ::selection {
-  background: var(--color-split);
-  color: var(--color-void);
+  background: rgba(255, 255, 255, 0.2);
 }

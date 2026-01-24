@@ -22,6 +22,26 @@ export const get = query({
   },
 });
 
+// Alias for get (used by EvolutionPanel)
+export const getById = query({
+  args: { agentId: v.id("agents") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.agentId);
+  },
+});
+
+// Get evolution history for an agent (alias for promptHistory)
+export const getEvolutionHistory = query({
+  args: { agentId: v.id("agents") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("promptEvolutions")
+      .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
+      .order("desc")
+      .collect();
+  },
+});
+
 // Get agent leaderboard (top N agents)
 export const leaderboard = query({
   args: { limit: v.optional(v.number()) },

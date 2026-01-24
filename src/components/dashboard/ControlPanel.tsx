@@ -1,8 +1,7 @@
 import { useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ControlPanelProps {
   simulationStatus?: "running" | "paused" | "stopped";
@@ -29,7 +28,6 @@ export function ControlPanel({ simulationStatus, hasAgents }: ControlPanelProps)
       try {
         await initializeSimulation({});
       } catch {
-        // Already initialized, just reset
         await resetSimulation();
       }
     } finally {
@@ -41,7 +39,6 @@ export function ControlPanel({ simulationStatus, hasAgents }: ControlPanelProps)
     setIsRunning(true);
     try {
       await startSimulation();
-      // Trigger first round
       await runRound({});
     } catch (error) {
       console.error("Failed to start simulation:", error);
@@ -55,32 +52,39 @@ export function ControlPanel({ simulationStatus, hasAgents }: ControlPanelProps)
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Controls</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <Button
-          onClick={handleSetup}
-          variant="outline"
-          disabled={isSettingUp || simulationStatus === "running"}
-        >
-          {isSettingUp ? "SETTING UP..." : "SETUP"}
-        </Button>
-        {simulationStatus === "running" ? (
-          <Button onClick={handlePause} variant="steal">
-            PAUSE
-          </Button>
-        ) : (
-          <Button
-            onClick={handleStart}
-            variant="split"
-            disabled={!hasAgents || isRunning}
-          >
-            {isRunning ? "STARTING..." : "START"}
-          </Button>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={handleSetup}
+        disabled={isSettingUp || simulationStatus === "running"}
+        className={cn(
+          "px-3 py-1.5 text-xs font-medium border border-white/20 rounded",
+          "hover:bg-white/10 transition-colors",
+          "disabled:opacity-30 disabled:cursor-not-allowed"
         )}
-      </CardContent>
-    </Card>
+      >
+        {isSettingUp ? "..." : "Setup"}
+      </button>
+
+      {simulationStatus === "running" ? (
+        <button
+          onClick={handlePause}
+          className="px-3 py-1.5 text-xs font-medium bg-white text-black rounded hover:bg-white/90 transition-colors"
+        >
+          Pause
+        </button>
+      ) : (
+        <button
+          onClick={handleStart}
+          disabled={!hasAgents || isRunning}
+          className={cn(
+            "px-3 py-1.5 text-xs font-medium bg-white text-black rounded",
+            "hover:bg-white/90 transition-colors",
+            "disabled:opacity-30 disabled:cursor-not-allowed"
+          )}
+        >
+          {isRunning ? "..." : "Start"}
+        </button>
+      )}
+    </div>
   );
 }

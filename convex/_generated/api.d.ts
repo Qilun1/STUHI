@@ -13,6 +13,8 @@ import type * as agents_mutations from "../agents/mutations.js";
 import type * as agents_personalities from "../agents/personalities.js";
 import type * as agents_queries from "../agents/queries.js";
 import type * as agents_voices from "../agents/voices.js";
+import type * as evolution_evolve from "../evolution/evolve.js";
+import type * as evolution_helpers from "../evolution/helpers.js";
 import type * as games from "../games.js";
 import type * as messages from "../messages.js";
 import type * as simulation_orchestrator from "../simulation/orchestrator.js";
@@ -32,6 +34,8 @@ declare const fullApi: ApiFromModules<{
   "agents/personalities": typeof agents_personalities;
   "agents/queries": typeof agents_queries;
   "agents/voices": typeof agents_voices;
+  "evolution/evolve": typeof evolution_evolve;
+  "evolution/helpers": typeof evolution_helpers;
   games: typeof games;
   messages: typeof messages;
   "simulation/orchestrator": typeof simulation_orchestrator;
