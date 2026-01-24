@@ -1,30 +1,36 @@
-import { useQuery, useMutation } from "convex/react";
+import { useState } from "react";
+import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+// Dashboard components
+import { ActiveMatches } from "@/components/dashboard/ActiveMatches";
+import { ControlPanel } from "@/components/dashboard/ControlPanel";
+
+// Match components
+import { MatchDialog } from "@/components/matches/MatchDialog";
+
+// Visualization components
+import { TrustNetwork } from "@/components/visualization/TrustNetwork";
+import { CooperationChart } from "@/components/visualization/CooperationChart";
+
+import type { Id } from "../convex/_generated/dataModel";
 
 export default function App() {
   const simulationState = useQuery(api.simulation.state.get);
   const agents = useQuery(api.agents.queries.list);
 
-  const initializeSimulation = useMutation(api.simulation.state.initialize);
-  const createAllAgents = useMutation(api.agents.mutations.createAll);
-  const startSimulation = useMutation(api.simulation.state.start);
-  const pauseSimulation = useMutation(api.simulation.state.pause);
-  const resetAgents = useMutation(api.agents.mutations.resetAll);
-  const resetSimulation = useMutation(api.simulation.state.reset);
+  // Match dialog state
+  const [selectedGameId, setSelectedGameId] = useState<Id<"games"> | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleSetup = async () => {
-    await resetAgents();
-    await createAllAgents();
-    try {
-      await initializeSimulation({});
-    } catch {
-      // Already initialized, just reset
-      await resetSimulation();
-    }
+  const handleSelectGame = (gameId: Id<"games">) => {
+    setSelectedGameId(gameId);
+    setDialogOpen(true);
   };
+
+  const currentRound = simulationState?.currentRound ?? 0;
 
   return (
     <div className="min-h-screen bg-void text-foreground">
@@ -50,7 +56,7 @@ export default function App() {
               </Badge>
             )}
             <span className="text-muted-foreground text-sm">
-              ROUND {simulationState?.currentRound ?? 0}
+              ROUND {currentRound}
             </span>
           </div>
         </div>
@@ -59,13 +65,13 @@ export default function App() {
       {/* Main Grid */}
       <main className="max-w-7xl mx-auto p-4">
         <div className="grid grid-cols-[280px_1fr] gap-4 h-[calc(100vh-120px)]">
-          {/* Left Column - Leaderboard */}
+          {/* Left Column - Leaderboard & Controls */}
           <div className="flex flex-col gap-4">
-            <Card>
+            <Card className="flex-1 overflow-hidden">
               <CardHeader>
                 <CardTitle>Leaderboard</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-y-auto h-[calc(100%-60px)]">
                 {agents === undefined ? (
                   <div className="animate-pulse space-y-2">
                     {[...Array(5)].map((_, i) => (
@@ -87,7 +93,7 @@ export default function App() {
                           {index + 1}.
                         </span>
                         <Badge
-                          variant={agent.type as keyof typeof Badge}
+                          variant={agent.type as "diplomat"}
                           className="font-mono"
                         >
                           {agent.badge}
@@ -106,72 +112,69 @@ export default function App() {
             </Card>
 
             {/* Controls */}
+            <ControlPanel
+              simulationStatus={simulationState?.status}
+              hasAgents={!!agents && agents.length > 0}
+            />
+          </div>
+
+          {/* Right Column - Active Matches & Visualizations */}
+          <div className="flex flex-col gap-4">
+            {/* Active Matches */}
             <Card>
               <CardHeader>
-                <CardTitle>Controls</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Active Matches</span>
+                  {currentRound > 0 && (
+                    <span className="text-sm text-muted-foreground font-normal">
+                      Round {currentRound}
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <Button onClick={handleSetup} variant="outline">
-                  SETUP
-                </Button>
-                {simulationState?.status === "running" ? (
-                  <Button onClick={() => pauseSimulation()} variant="steal">
-                    PAUSE
-                  </Button>
+              <CardContent>
+                {currentRound > 0 ? (
+                  <ActiveMatches
+                    roundNumber={currentRound}
+                    onSelectGame={handleSelectGame}
+                  />
                 ) : (
-                  <Button
-                    onClick={() => startSimulation()}
-                    variant="split"
-                    disabled={!simulationState || agents?.length === 0}
-                  >
-                    START
-                  </Button>
+                  <div className="h-32 flex items-center justify-center text-muted-foreground">
+                    Start simulation to see matches
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          {/* Right Column - Active Matches */}
-          <div className="flex flex-col gap-4">
-            <Card className="flex-1">
-              <CardHeader>
-                <CardTitle>Active Matches</CardTitle>
-              </CardHeader>
-              <CardContent className="h-full flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  {simulationState?.status === "running"
-                    ? "Matches will appear here during simulation..."
-                    : "Start simulation to see matches"}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Bottom Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
+            {/* Bottom Row - Visualizations */}
+            <div className="grid grid-cols-2 gap-4 flex-1">
+              <Card className="overflow-hidden">
                 <CardHeader>
                   <CardTitle>Trust Network</CardTitle>
                 </CardHeader>
-                <CardContent className="aspect-square flex items-center justify-center">
-                  <p className="text-muted-foreground text-sm">
-                    Graph visualization
-                  </p>
+                <CardContent className="h-[calc(100%-60px)]">
+                  <TrustNetwork />
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader>
                   <CardTitle>Cooperation Timeline</CardTitle>
                 </CardHeader>
-                <CardContent className="flex items-center justify-center">
-                  <p className="text-muted-foreground text-sm">
-                    Sparkline chart
-                  </p>
+                <CardContent className="h-[calc(100%-60px)]">
+                  <CooperationChart />
                 </CardContent>
               </Card>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Match Reenactment Dialog */}
+      <MatchDialog
+        gameId={selectedGameId}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 }

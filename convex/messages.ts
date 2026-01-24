@@ -1,6 +1,14 @@
 import { query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
+// Get a single message by ID
+export const get = query({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.messageId);
+  },
+});
+
 // Get messages for a game
 export const byGame = query({
   args: { gameId: v.id("games") },

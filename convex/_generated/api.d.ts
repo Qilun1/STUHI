@@ -12,10 +12,13 @@ import type * as agents_llmAgent from "../agents/llmAgent.js";
 import type * as agents_mutations from "../agents/mutations.js";
 import type * as agents_personalities from "../agents/personalities.js";
 import type * as agents_queries from "../agents/queries.js";
+import type * as agents_voices from "../agents/voices.js";
 import type * as games from "../games.js";
 import type * as messages from "../messages.js";
+import type * as simulation_orchestrator from "../simulation/orchestrator.js";
 import type * as simulation_scorer from "../simulation/scorer.js";
 import type * as simulation_state from "../simulation/state.js";
+import type * as simulation_voice from "../simulation/voice.js";
 
 import type {
   ApiFromModules,
@@ -28,10 +31,13 @@ declare const fullApi: ApiFromModules<{
   "agents/mutations": typeof agents_mutations;
   "agents/personalities": typeof agents_personalities;
   "agents/queries": typeof agents_queries;
+  "agents/voices": typeof agents_voices;
   games: typeof games;
   messages: typeof messages;
+  "simulation/orchestrator": typeof simulation_orchestrator;
   "simulation/scorer": typeof simulation_scorer;
   "simulation/state": typeof simulation_state;
+  "simulation/voice": typeof simulation_voice;
 }>;
 
 /**

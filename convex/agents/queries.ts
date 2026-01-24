@@ -119,3 +119,61 @@ export const stats = query({
     };
   },
 });
+
+// Get full trust network for visualization
+export const trustNetwork = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get all active agents
+    const agents = await ctx.db
+      .query("agents")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+
+    // Get all trust relationships
+    const relationships = await ctx.db.query("trustRelationships").collect();
+
+    // Format for visualization
+    const nodes = agents.map((agent) => ({
+      id: agent._id,
+      name: agent.name,
+      badge: agent.badge,
+      color: agent.color,
+      type: agent.type,
+      totalScore: agent.totalScore,
+      cooperationRate: agent.cooperationRate,
+    }));
+
+    const edges = relationships.map((rel) => ({
+      source: rel.fromAgentId,
+      target: rel.toAgentId,
+      trustScore: rel.trustScore,
+      interactionCount: rel.interactionCount,
+    }));
+
+    return { nodes, edges };
+  },
+});
+
+// Get cooperation timeline for charts
+export const cooperationTimeline = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+
+    const summaries = await ctx.db
+      .query("roundSummaries")
+      .withIndex("by_round")
+      .order("desc")
+      .take(limit);
+
+    // Return in ascending order for chart display
+    return summaries.reverse().map((s) => ({
+      round: s.roundNumber,
+      cooperationRate: s.cooperationRate,
+      betrayalCount: s.betrayalCount,
+      mutualDefectionCount: s.mutualDefectionCount,
+      averageScore: s.averageScore,
+    }));
+  },
+});
