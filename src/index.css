@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/700.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Terminal Noir Theme - Always dark */
+@theme inline {
+  /* No border radius - brutalist style */
+  --radius: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+
+  /* Shadcn variable mappings */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Custom STUHI colors */
+  --color-void: #0a0a0a;
+  --color-surface: #141414;
+  --color-elevated: #1a1a1a;
+  --color-split: #00ff88;
+  --color-steal: #ff3366;
+  --color-negotiate: #ffd700;
+  --color-evolve: #9d4edd;
+
+  /* Agent accent colors */
+  --color-agent-diplomat: #4ade80;
+  --color-agent-shark: #f43f5e;
+  --color-agent-saint: #fbbf24;
+  --color-agent-grudger: #8b5cf6;
+  --color-agent-analyst: #06b6d4;
+  --color-agent-charmer: #ec4899;
+  --color-agent-paranoid: #64748b;
+  --color-agent-healer: #22d3ee;
+  --color-agent-wildcard: #f97316;
+  --color-agent-mirror: #a3e635;
+
+  /* Fonts */
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+}
+
+/* Force dark mode - Terminal Noir only */
+:root {
+  --background: #0a0a0a;
+  --foreground: #e5e5e5;
+  --card: #141414;
+  --card-foreground: #e5e5e5;
+  --popover: #1a1a1a;
+  --popover-foreground: #e5e5e5;
+  --primary: #00ff88;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #e5e5e5;
+  --muted: #1a1a1a;
+  --muted-foreground: #666666;
+  --accent: #1a1a1a;
+  --accent-foreground: #e5e5e5;
+  --destructive: #ff3366;
+  --border: #333333;
+  --input: #1a1a1a;
+  --ring: #00ff88;
+}
+
+/* Dark class for shadcn compatibility */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #e5e5e5;
+  --card: #141414;
+  --card-foreground: #e5e5e5;
+  --popover: #1a1a1a;
+  --popover-foreground: #e5e5e5;
+  --primary: #00ff88;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #e5e5e5;
+  --muted: #1a1a1a;
+  --muted-foreground: #666666;
+  --accent: #1a1a1a;
+  --accent-foreground: #e5e5e5;
+  --destructive: #ff3366;
+  --border: #333333;
+  --input: #1a1a1a;
+  --ring: #00ff88;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-mono antialiased;
+    font-feature-settings: "liga" 1, "calt" 1;
+  }
+
+  /* Force all borders to be 2px - brutalist */
+  .border,
+  [class*="border-"] {
+    border-width: 2px;
+  }
+
+  /* No rounded corners anywhere */
+  * {
+    border-radius: 0 !important;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  /* Text colors */
+  .text-split {
+    color: var(--color-split);
+  }
+  .text-steal {
+    color: var(--color-steal);
+  }
+  .text-negotiate {
+    color: var(--color-negotiate);
+  }
+  .text-evolve {
+    color: var(--color-evolve);
+  }
+
+  /* Background colors */
+  .bg-void {
+    background-color: var(--color-void);
+  }
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+  .bg-elevated {
+    background-color: var(--color-elevated);
+  }
+
+  /* Flicker animation for betrayal alerts */
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .animate-flicker {
+    animation: flicker 0.15s steps(2) 3;
+  }
+
+  /* Pulse animation for updates */
+  @keyframes pulse-fast {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-pulse-fast {
+    animation: pulse-fast 0.3s ease-in-out;
+  }
+
+  /* Typing cursor */
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  .animate-cursor {
+    animation: blink 1s step-end infinite;
+  }
+
+  /* Display font for headers */
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+/* Scrollbar styling - Terminal aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border: 1px solid #444444;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444444;
+}
+
+/* Selection styling */
+::selection {
+  background: var(--color-split);
+  color: var(--color-void);
+}
