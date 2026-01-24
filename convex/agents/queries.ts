@@ -22,7 +22,7 @@ export const get = query({
   },
 });
 
-// Alias for get (used by EvolutionPanel)
+// Alias for get (used by EvolutionPanel and orchestrator)
 export const getById = query({
   args: { agentId: v.id("agents") },
   handler: async (ctx, args) => {

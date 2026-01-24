@@ -189,6 +189,33 @@ export default defineSchema({
     updatedAt: v.number(),
   }),
 
+  // Agent memories about specific opponents
+  agentMemories: defineTable({
+    agentId: v.id("agents"),
+    aboutAgentId: v.id("agents"),
+    aboutAgentName: v.string(), // Denormalized for easy access
+
+    // Short memory notes (max ~50 chars each)
+    notes: v.array(v.string()), // e.g., ["Betrayed me round 5", "Always lies about splitting"]
+
+    // Quick stats
+    timesBetrayed: v.number(),
+    timesBetrayedThem: v.number(),
+    gamesPlayed: v.number(),
+
+    // Trust assessment
+    trustLevel: v.union(
+      v.literal("trusted"),
+      v.literal("neutral"),
+      v.literal("distrusted"),
+      v.literal("enemy")
+    ),
+
+    updatedAt: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_pair", ["agentId", "aboutAgentId"]),
+
   // Round summaries for historical analysis and charts
   roundSummaries: defineTable({
     roundNumber: v.number(),

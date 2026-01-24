@@ -9,6 +9,7 @@
  */
 
 import type * as agents_llmAgent from "../agents/llmAgent.js";
+import type * as agents_memories from "../agents/memories.js";
 import type * as agents_mutations from "../agents/mutations.js";
 import type * as agents_personalities from "../agents/personalities.js";
 import type * as agents_queries from "../agents/queries.js";
@@ -30,6 +31,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "agents/llmAgent": typeof agents_llmAgent;
+  "agents/memories": typeof agents_memories;
   "agents/mutations": typeof agents_mutations;
   "agents/personalities": typeof agents_personalities;
   "agents/queries": typeof agents_queries;

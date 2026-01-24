@@ -226,12 +226,10 @@ export const generateNegotiationMessage = internalAction({
           role: "user",
           content: `${contextPrompt}
 
-This is message ${args.messageNumber} of 3 in this negotiation.
-Write your negotiation message to your opponent. Be strategic and stay in character.
-Keep it concise (1-3 sentences). Do not include any metadata or formatting, just the message itself.`,
+Message ${args.messageNumber}/3. Write ONE short sentence (max 15 words). Stay in character.`,
         },
       ],
-      { maxTokens: 150 }
+      { maxTokens: 50 }
     );
 
     return content || "...";

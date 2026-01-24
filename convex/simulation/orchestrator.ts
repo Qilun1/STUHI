@@ -91,6 +91,14 @@ export const processGame = internalAction({
     scoreA: number;
     scoreB: number;
   }> => {
+    // Get agent names for memory recording
+    const [agentA, agentB] = await Promise.all([
+      ctx.runQuery(api.agents.queries.getById, { agentId: args.agentAId }),
+      ctx.runQuery(api.agents.queries.getById, { agentId: args.agentBId }),
+    ]);
+    const agentAName = agentA?.name ?? "Unknown";
+    const agentBName = agentB?.name ?? "Unknown";
+
     // Create the game
     const gameId = await ctx.runMutation(internal.games.create, {
       roundNumber: args.roundNumber,
@@ -274,6 +282,26 @@ export const processGame = internalAction({
         myScore: scoreB,
         theirScore: scoreA,
         trustDelta: deltaBtoA,
+      }),
+    ]);
+
+    // Update agent memories
+    await Promise.all([
+      ctx.runMutation(internal.agents.memories.updateMemoryAfterGame, {
+        agentId: args.agentAId,
+        opponentId: args.agentBId,
+        opponentName: agentBName,
+        myDecision: decisionA.decision,
+        theirDecision: decisionB.decision,
+        roundNumber: args.roundNumber,
+      }),
+      ctx.runMutation(internal.agents.memories.updateMemoryAfterGame, {
+        agentId: args.agentBId,
+        opponentId: args.agentAId,
+        opponentName: agentAName,
+        myDecision: decisionB.decision,
+        theirDecision: decisionA.decision,
+        roundNumber: args.roundNumber,
       }),
     ]);
 

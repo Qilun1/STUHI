@@ -24,7 +24,7 @@ export const getActiveAgents = internalQuery({
   },
 });
 
-// Get recent interactions for an agent
+// Get recent interactions for an agent (with opponent names)
 export const getRecentInteractions = internalQuery({
   args: {
     agentId: v.id("agents"),
@@ -36,7 +36,21 @@ export const getRecentInteractions = internalQuery({
       .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
       .collect();
 
-    return interactions.filter((i) => i.roundNumber >= args.sinceRound);
+    const filtered = interactions.filter((i) => i.roundNumber >= args.sinceRound);
+
+    // Enrich with opponent names
+    const enriched = await Promise.all(
+      filtered.map(async (i) => {
+        const opponent = await ctx.db.get(i.opponentId);
+        return {
+          ...i,
+          opponentName: opponent?.name ?? "Unknown",
+          opponentType: opponent?.type ?? "unknown",
+        };
+      })
+    );
+
+    return enriched;
   },
 });
 

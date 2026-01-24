@@ -74,22 +74,23 @@ export const evolveAgent = internalAction({
       [
         {
           role: "system",
-          content: `You are an AI evolution system. Analyze an agent's game performance and evolve their strategy.
+          content: `Evolve agent strategy. Return JSON only:
 
-CRITICAL: You must respond with a JSON object in this EXACT format:
-{
-  "reflection": "2-3 sentences about what worked and what didn't",
-  "newPrompt": "The complete system prompt as a single string with the same structure as the original"
-}
+{"reflection": "10 words max", "newPrompt": "2-3 lines, under 50 words total"}
 
-The "newPrompt" MUST be a plain text string (not a nested object). Keep the same format as the original prompt with BELIEFS, NEGOTIATION STYLE, DECISION MAKING sections, and the Remember line at the end. Make strategic improvements based on performance while maintaining the agent's core personality.`,
+newPrompt FORMAT (EXACTLY):
+[Name]: [Core rule in one sentence]. [Exception if any].
+Talk: [Style in 5 words].
+[Optional: STEAL vs [enemy] if betrayed 2+ times]
+
+CRITICAL: Keep it ULTRA SHORT. Max 50 words. No bullet points. No verbose explanations.`,
         },
         {
           role: "user",
           content: evolutionPrompt,
         },
       ],
-      1500
+      300
     );
 
     // Parse response
@@ -260,7 +261,7 @@ function calculatePeriodStats(
   };
 }
 
-// Helper: Build the evolution prompt
+// Helper: Build the evolution prompt (compact)
 function buildEvolutionPrompt(
   agent: {
     name: string;
@@ -278,39 +279,32 @@ function buildEvolutionPrompt(
     myPromise: string;
     theirPromise: string;
     myScore: number;
+    theirScore: number;
+    opponentName?: string;
+    opponentType?: string;
   }>
 ): string {
-  // Summarize recent interaction patterns
-  const patterns = interactions.slice(-10).map((i) => {
-    const outcome =
-      i.myScore > 50 ? "won" : i.myScore < 50 ? "lost" : "tied";
-    return `${i.myDecision.toUpperCase()} vs ${i.theirDecision.toUpperCase()} (${outcome}, promised: ${i.myPromise}, they promised: ${i.theirPromise})`;
-  });
+  // Opponent-specific summary (who betrayed, who cooperates)
+  const opponentStats: Record<string, { betrayedBy: number; games: number }> = {};
+  for (const i of interactions) {
+    const name = i.opponentName ?? "?";
+    if (!opponentStats[name]) opponentStats[name] = { betrayedBy: 0, games: 0 };
+    opponentStats[name].games++;
+    if (i.myDecision === "split" && i.theirDecision === "steal") {
+      opponentStats[name].betrayedBy++;
+    }
+  }
 
-  return `AGENT: ${agent.name} (${agent.type})
+  const enemies = Object.entries(opponentStats)
+    .filter(([, s]) => s.betrayedBy >= 2)
+    .map(([name, s]) => `${name} (${s.betrayedBy}x)`);
 
-CURRENT SYSTEM PROMPT:
-${agent.systemPrompt}
+  const trustworthy = Object.entries(opponentStats)
+    .filter(([, s]) => s.betrayedBy === 0 && s.games >= 2)
+    .map(([name]) => name);
 
-OVERALL STATS:
-- Total Score: ${agent.totalScore}
-- Games Played: ${agent.gamesPlayed}
-- Overall Cooperation Rate: ${(agent.cooperationRate * 100).toFixed(1)}%
-- Overall Promise Keeping: ${(agent.promiseKeepingRate * 100).toFixed(1)}%
-
-RECENT PERIOD PERFORMANCE (last 5 rounds):
-- Games: ${stats.gamesPlayed}
-- Wins: ${stats.wins}, Losses: ${stats.losses}
-- Win Rate: ${(stats.winRate * 100).toFixed(1)}%
-- Average Score: ${stats.averageScore.toFixed(1)}
-- Cooperation Rate: ${(stats.cooperationRate * 100).toFixed(1)}%
-- Promise Keeping: ${(stats.promiseKeepingRate * 100).toFixed(1)}%
-- Trust Gained/Lost: ${stats.trustGained > 0 ? "+" : ""}${stats.trustGained.toFixed(1)}
-- Times Betrayed: ${stats.betrayalsReceived}
-- Times I Betrayed: ${stats.betrayalsMade}
-
-RECENT GAME PATTERNS:
-${patterns.join("\n")}
-
-Based on this data, provide a reflection on what's working and what isn't, and an evolved system prompt that improves the agent's strategy while maintaining their core personality type (${agent.type}).`;
+  return `${agent.name}: ${Math.round(stats.winRate * 100)}%W, ${Math.round(agent.cooperationRate * 100)}%coop, betrayed ${stats.betrayalsReceived}x
+Current: ${agent.systemPrompt}
+${enemies.length > 0 ? `ENEMIES: ${enemies.join(", ")}` : ""}
+Evolve. Keep under 50 words. Add "STEAL vs [enemy]" if needed.`;
 }
