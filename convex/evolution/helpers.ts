@@ -56,6 +56,24 @@ export const getRecentInteractions = internalQuery({
 
 // ===== Internal Mutations =====
 
+// Trigger event type
+const triggerEventValidator = v.object({
+  type: v.string(),
+  description: v.string(),
+  opponent: v.optional(v.string()),
+  round: v.optional(v.number()),
+  impact: v.optional(v.string()),
+});
+
+// Key moment type
+const keyMomentValidator = v.object({
+  round: v.number(),
+  opponent: v.string(),
+  event: v.string(),
+  score: v.number(),
+  significance: v.string(),
+});
+
 // Record an evolution event
 export const recordEvolution = internalMutation({
   args: {
@@ -71,6 +89,22 @@ export const recordEvolution = internalMutation({
     cooperationRate: v.number(),
     promiseKeepingRate: v.number(),
     trustGained: v.number(),
+    // Enhanced evolution data
+    triggerEvents: v.optional(v.array(triggerEventValidator)),
+    keyMoments: v.optional(v.array(keyMomentValidator)),
+    strategyChanges: v.optional(v.array(v.string())),
+    enemiesIdentified: v.optional(v.array(v.string())),
+    alliesIdentified: v.optional(v.array(v.string())),
+    performanceAnalysis: v.optional(v.string()),
+    previousPromptSummary: v.optional(v.string()),
+    roundRange: v.optional(v.object({ start: v.number(), end: v.number() })),
+    betrayalsReceived: v.optional(v.number()),
+    betrayalsMade: v.optional(v.number()),
+    emotionalState: v.optional(v.string()),
+    lessonLearned: v.optional(v.string()),
+    evolutionNarrative: v.optional(v.string()),
+    nemesis: v.optional(v.string()),
+    ally: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("promptEvolutions", {
@@ -86,6 +120,21 @@ export const recordEvolution = internalMutation({
       cooperationRate: args.cooperationRate,
       promiseKeepingRate: args.promiseKeepingRate,
       trustGained: args.trustGained,
+      triggerEvents: args.triggerEvents,
+      keyMoments: args.keyMoments,
+      strategyChanges: args.strategyChanges,
+      enemiesIdentified: args.enemiesIdentified,
+      alliesIdentified: args.alliesIdentified,
+      performanceAnalysis: args.performanceAnalysis,
+      previousPromptSummary: args.previousPromptSummary,
+      roundRange: args.roundRange,
+      betrayalsReceived: args.betrayalsReceived,
+      betrayalsMade: args.betrayalsMade,
+      emotionalState: args.emotionalState,
+      lessonLearned: args.lessonLearned,
+      evolutionNarrative: args.evolutionNarrative,
+      nemesis: args.nemesis,
+      ally: args.ally,
       createdAt: Date.now(),
     });
   },

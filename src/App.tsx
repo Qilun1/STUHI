@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useAction } from "convex/react";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { ControlPanel } from "@/components/dashboard/ControlPanel";
+import { AgentProfileModal } from "@/components/AgentProfileModal";
+import { VoiceQA } from "@/components/VoiceQA";
 import { cn } from "@/lib/utils";
 import type { Id } from "../convex/_generated/dataModel";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useVoiceQueue } from "@/hooks/useVoiceQueue";
 
 export default function App() {
   const simulationState = useQuery(api.simulation.state.get);
@@ -20,9 +23,23 @@ export default function App() {
   const [selectedAgentId, setSelectedAgentId] = useState<Id<"agents"> | null>(null);
   const [visibleMessages, setVisibleMessages] = useState(0);
   const [showDecisions, setShowDecisions] = useState(false);
-  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
-  const [expandedEvolution, setExpandedEvolution] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Voice queue for auto-playing messages
+  const {
+    isMuted,
+    isPlaying: isPlayingVoice,
+    currentMessageId,
+    toggleMute,
+    playMessage,
+    playAllMessages,
+    clearQueue
+  } = useVoiceQueue();
+
+  // Simulation control mutations
+  const pauseSimulation = useMutation(api.simulation.state.pause);
+  const startSimulation = useMutation(api.simulation.state.start);
+  const runRound = useAction(api.simulation.orchestrator.runRound);
+  const [isResuming, setIsResuming] = useState(false);
 
   // Fetch messages for selected game
   const messages = useQuery(
@@ -42,48 +59,118 @@ export default function App() {
     selectedAgentId ? { agentId: selectedAgentId } : "skip"
   );
 
-  const generateVoice = useAction(api.simulation.voice.generateVoice);
+  // Handle selecting a game - auto-pause and play voice
+  const handleSelectGame = useCallback(async (gameId: Id<"games"> | null) => {
+    // If deselecting, just clear the selection
+    if (gameId === null || gameId === selectedGameId) {
+      setSelectedGameId(null);
+      clearQueue();
+      return;
+    }
 
-  // Dramatic slow message reveal (1.5s per message)
+    // Select the new game - this clears queue and starts fresh
+    setSelectedGameId(gameId);
+    clearQueue();
+
+    // Auto-pause simulation if running
+    if (simulationState?.status === "running") {
+      try {
+        await pauseSimulation();
+      } catch (err) {
+        console.error("Failed to pause simulation:", err);
+      }
+    }
+  }, [selectedGameId, simulationState?.status, pauseSimulation, clearQueue]);
+
+  // Handle resume simulation
+  const handleResume = useCallback(async () => {
+    setIsResuming(true);
+    try {
+      // Clear the selected game so user can watch live
+      setSelectedGameId(null);
+      clearQueue();
+      await startSimulation();
+      await runRound({});
+    } catch (err) {
+      console.error("Failed to resume simulation:", err);
+    } finally {
+      setIsResuming(false);
+    }
+  }, [startSimulation, runRound, clearQueue]);
+
+  // Handle selecting an agent - auto-pause and show profile modal
+  const handleSelectAgent = useCallback(async (agentId: Id<"agents"> | null) => {
+    // If deselecting, just clear the selection
+    if (agentId === null) {
+      setSelectedAgentId(null);
+      return;
+    }
+
+    // Select the agent
+    setSelectedAgentId(agentId);
+
+    // Auto-pause simulation if running
+    if (simulationState?.status === "running") {
+      try {
+        await pauseSimulation();
+      } catch (err) {
+        console.error("Failed to pause simulation:", err);
+      }
+    }
+  }, [simulationState?.status, pauseSimulation]);
+
+  // Reset state when game changes
   useEffect(() => {
     if (!messages || messages.length === 0 || !selectedGameId) {
       setVisibleMessages(0);
       setShowDecisions(false);
       return;
     }
+    // Reset for new game
     setVisibleMessages(0);
     setShowDecisions(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only reset on game change
+  }, [selectedGameId]);
 
-    const interval = setInterval(() => {
-      setVisibleMessages((prev) => {
-        if (prev >= messages.length) {
-          clearInterval(interval);
-          // Show decisions after all messages
-          setTimeout(() => setShowDecisions(true), 1000);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 1500); // 1.5 seconds per message
+  // Sync message visibility with voice playback
+  useEffect(() => {
+    if (!messages || messages.length === 0 || !selectedGameId) return;
 
-    return () => clearInterval(interval);
-  }, [messages, selectedGameId]);
-
-  // Play voice for current message
-  const playVoice = async (messageId: Id<"messages">) => {
-    try {
-      setIsPlayingVoice(true);
-      const result = await generateVoice({ messageId });
-      if (result.audioUrl && audioRef.current) {
-        audioRef.current.src = result.audioUrl;
-        await audioRef.current.play();
+    // If voice is playing, sync visibility to current playing message
+    if (currentMessageId && isPlayingVoice) {
+      const playingIndex = messages.findIndex(m => m._id === currentMessageId);
+      if (playingIndex !== -1) {
+        // Show messages up to and including the one being played
+        setVisibleMessages(Math.max(visibleMessages, playingIndex + 1));
       }
-    } catch (err) {
-      console.error("Voice failed:", err);
-    } finally {
-      setIsPlayingVoice(false);
     }
-  };
+  }, [currentMessageId, isPlayingVoice, messages, selectedGameId, visibleMessages]);
+
+  // Timer-based reveal when voice is muted OR as fallback
+  useEffect(() => {
+    if (!messages || messages.length === 0 || !selectedGameId) return;
+
+    // If all messages are already visible, show decisions
+    if (visibleMessages >= messages.length) {
+      const timer = setTimeout(() => setShowDecisions(true), 1000);
+      return () => clearTimeout(timer);
+    }
+
+    // If voice is muted or not actively playing, use timer-based reveal
+    if (isMuted || !isPlayingVoice) {
+      const interval = setInterval(() => {
+        setVisibleMessages((prev) => {
+          if (prev >= messages.length) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1500);
+
+      return () => clearInterval(interval);
+    }
+  }, [messages, selectedGameId, isMuted, isPlayingVoice, visibleMessages]);
 
   const isRunning = simulationState?.status === "running";
   const hasAgents = agents && agents.length > 0;
@@ -104,27 +191,59 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Hidden audio element */}
-      <audio ref={audioRef} onEnded={() => setIsPlayingVoice(false)} />
-
       {/* Header */}
       <header className="border-b border-white/10 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-base font-semibold tracking-tight">STUHI</h1>
-          <span className="text-white/40 text-xs">The Trust Arena</span>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold tracking-widest">FR8</h1>
+          <span className="text-white/40 text-sm">The Trust Arena</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-xs">
+          <div className={cn(
+            "flex items-center gap-2 text-xs px-2 py-1 rounded",
+            simulationState?.status === "paused" && "bg-amber-500/20"
+          )}>
             <div className={cn(
               "w-1.5 h-1.5 rounded-full",
-              isRunning ? "bg-emerald-400 animate-pulse" : "bg-white/30"
+              isRunning ? "bg-emerald-400 animate-pulse" :
+              simulationState?.status === "paused" ? "bg-amber-400" : "bg-white/30"
             )} />
-            <span className="text-white/60">{simulationState?.status?.toUpperCase() ?? "STOPPED"}</span>
+            <span className={cn(
+              simulationState?.status === "paused" ? "text-amber-400 font-medium" : "text-white/60"
+            )}>
+              {simulationState?.status?.toUpperCase() ?? "STOPPED"}
+            </span>
           </div>
           <div className="text-xs">
             <span className="text-white/40">Round</span>{" "}
             <span className="font-mono text-emerald-400">{currentRound}</span>
           </div>
+          {/* Voice mute toggle */}
+          <button
+            onClick={toggleMute}
+            className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors",
+              isMuted
+                ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+            )}
+            title={isMuted ? "Unmute voice" : "Mute voice"}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMuted ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              )}
+            </svg>
+            <span className="font-medium">{isMuted ? "MUTED" : "VOICE"}</span>
+            {isPlayingVoice && !isMuted && (
+              <span className="flex items-center gap-0.5">
+                <span className="w-0.5 h-2 bg-emerald-400 animate-pulse" />
+                <span className="w-0.5 h-3 bg-emerald-400 animate-pulse delay-75" />
+                <span className="w-0.5 h-1.5 bg-emerald-400 animate-pulse delay-150" />
+              </span>
+            )}
+          </button>
           <ControlPanel
             simulationStatus={simulationState?.status}
             hasAgents={hasAgents ?? false}
@@ -154,7 +273,7 @@ export default function App() {
                   {agents.map((agent, index) => (
                     <button
                       key={agent._id}
-                      onClick={() => setSelectedAgentId(selectedAgentId === agent._id ? null : agent._id)}
+                      onClick={() => void handleSelectAgent(agent._id)}
                       className={cn(
                         "w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors text-left",
                         selectedAgentId === agent._id && "bg-emerald-500/10 border-l-2 border-emerald-400"
@@ -175,112 +294,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Agent Profile Panel - Clean */}
-              {selectedAgent && (
-                <div className="mt-4 border border-emerald-500/30 rounded-md animate-fade-in bg-emerald-500/5">
-                  <div className="px-3 py-2 border-b border-emerald-500/20 flex items-center justify-between">
-                    <span className="text-xs font-medium text-emerald-400">{selectedAgent.name}</span>
-                    <button
-                      onClick={() => setSelectedAgentId(null)}
-                      className="text-[10px] text-white/40 hover:text-white"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="p-3 max-h-[450px] overflow-y-auto space-y-3">
-                    {/* Current Strategy */}
-                    <div>
-                      <div className="text-[9px] text-emerald-400/70 uppercase mb-1 font-medium flex items-center gap-2">
-                        Strategy <span className="text-white/30">v{selectedAgent.promptVersion}</span>
-                      </div>
-                      <div className="text-[10px] text-white/80 bg-black/40 border border-white/10 rounded p-2 leading-relaxed whitespace-pre-wrap">
-                        {selectedAgent.systemPrompt}
-                      </div>
-                    </div>
-
-                    {/* Memories */}
-                    {memories && memories.length > 0 && (
-                      <div>
-                        <div className="text-[9px] text-amber-400/70 uppercase mb-1 font-medium">
-                          Memories ({memories.length})
-                        </div>
-                        <div className="space-y-1">
-                          {memories.map((mem) => (
-                            <div
-                              key={mem._id}
-                              className={cn(
-                                "flex items-center gap-2 px-2 py-1 rounded text-[10px]",
-                                mem.trustLevel === "enemy" ? "bg-red-500/10 border border-red-500/20" :
-                                mem.trustLevel === "distrusted" ? "bg-amber-500/10 border border-amber-500/20" :
-                                mem.trustLevel === "trusted" ? "bg-emerald-500/10 border border-emerald-500/20" :
-                                "bg-white/5 border border-white/10"
-                              )}
-                            >
-                              <span className={cn(
-                                "font-mono font-medium",
-                                mem.trustLevel === "enemy" ? "text-red-400" :
-                                mem.trustLevel === "distrusted" ? "text-amber-400" :
-                                mem.trustLevel === "trusted" ? "text-emerald-400" : "text-white/60"
-                              )}>
-                                {mem.aboutAgentName}
-                              </span>
-                              {mem.timesBetrayed > 0 && (
-                                <span className="text-red-400 text-[9px]">
-                                  betrayed {mem.timesBetrayed}x
-                                </span>
-                              )}
-                              {mem.notes.length > 0 && (
-                                <span className="text-white/40 text-[9px] truncate flex-1">
-                                  {mem.notes[mem.notes.length - 1]}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Evolution History (Collapsed) */}
-                    {evolution && evolution.length > 1 && (
-                      <div>
-                        <div className="text-[9px] text-white/40 uppercase mb-1 font-medium">
-                          Evolution History
-                        </div>
-                        <div className="space-y-1">
-                          {evolution.slice(1, 4).map((evo) => (
-                            <button
-                              key={evo._id}
-                              onClick={() => setExpandedEvolution(expandedEvolution === evo._id ? null : evo._id)}
-                              className="w-full text-left px-2 py-1 rounded bg-black/30 hover:bg-black/50 transition-colors"
-                            >
-                              <div className="flex items-center gap-2 text-[10px]">
-                                <span className="text-white/40 font-mono">v{evo.version}</span>
-                                <span className={cn(
-                                  "text-[9px] px-1 rounded",
-                                  evo.winRate > 0.5 ? "bg-emerald-500/20 text-emerald-400" :
-                                  evo.winRate < 0.3 ? "bg-red-500/20 text-red-400" : "text-white/40"
-                                )}>
-                                  {Math.round(evo.winRate * 100)}%W
-                                </span>
-                                {evo.selfReflection && (
-                                  <span className="text-white/50 text-[9px] truncate flex-1 italic">
-                                    {evo.selfReflection.slice(0, 50)}...
-                                  </span>
-                                )}
-                              </div>
-                              {expandedEvolution === evo._id && (
-                                <div className="mt-2 text-[9px] text-white/60 bg-black/40 rounded p-2 whitespace-pre-wrap">
-                                  {evo.prompt}
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Center Column - Current Round */}
@@ -325,7 +338,7 @@ export default function App() {
                     {games.map((game) => (
                       <button
                         key={game._id}
-                        onClick={() => setSelectedGameId(selectedGameId === game._id ? null : game._id)}
+                        onClick={() => void handleSelectGame(selectedGameId === game._id ? null : game._id)}
                         className={cn(
                           "w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors text-left",
                           selectedGameId === game._id && "bg-amber-500/10 border-l-2 border-amber-400"
@@ -371,13 +384,205 @@ export default function App() {
                 )}
               </div>
 
+              {/* AI Neural Network - Technical Visualization */}
+              {isRunning && (
+                <div className="mt-4 flex justify-center animate-fade-in">
+                  <div className="relative w-72 h-72">
+                    {/* Background grid */}
+                    <div className="absolute inset-0 opacity-[0.07]">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <defs>
+                          <pattern id="grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                            <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#22d3d1" strokeWidth="0.2"/>
+                          </pattern>
+                        </defs>
+                        <rect width="100" height="100" fill="url(#grid)" />
+                      </svg>
+                    </div>
+
+                    {/* Outer rotating rings */}
+                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '25s' }}>
+                      <circle cx="50" cy="50" r="48" fill="none" stroke="#a855f7" strokeWidth="0.2" strokeDasharray="2 4 8 4" opacity="0.5" />
+                      <circle cx="50" cy="50" r="46" fill="none" stroke="#22d3d1" strokeWidth="0.15" strokeDasharray="1 3" opacity="0.3" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '18s', animationDirection: 'reverse' }}>
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="#22d3d1" strokeWidth="0.3" strokeDasharray="1 2 6 2" opacity="0.4" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '30s' }}>
+                      <circle cx="50" cy="50" r="38" fill="none" stroke="#a855f7" strokeWidth="0.15" strokeDasharray="3 6" opacity="0.3" />
+                    </svg>
+
+                    {/* Main neural network */}
+                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+                      <defs>
+                        <linearGradient id="neuralGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#a855f7" />
+                          <stop offset="50%" stopColor="#22d3d1" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                        <filter id="glow"><feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                        <filter id="glowStrong"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                      </defs>
+
+                      {/* Hexagonal frame */}
+                      <polygon points="50,15 75,32 75,68 50,85 25,68 25,32" fill="none" stroke="url(#neuralGrad)" strokeWidth="0.3" opacity="0.5" />
+                      <polygon points="50,22 68,35 68,65 50,78 32,65 32,35" fill="none" stroke="#22d3d1" strokeWidth="0.2" opacity="0.3" />
+                      <polygon points="50,29 61,38 61,62 50,71 39,62 39,38" fill="none" stroke="#a855f7" strokeWidth="0.15" opacity="0.25" />
+
+                      {/* Input layer */}
+                      <g filter="url(#glow)">
+                        <circle cx="12" cy="28" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.1s" repeatCount="indefinite" /></circle>
+                        <circle cx="12" cy="42" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.3s" repeatCount="indefinite" begin="0.15s" /></circle>
+                        <circle cx="12" cy="56" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.2s" repeatCount="indefinite" begin="0.3s" /></circle>
+                        <circle cx="12" cy="70" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.4s" repeatCount="indefinite" begin="0.45s" /></circle>
+                      </g>
+
+                      {/* Hidden layer 1 */}
+                      <g filter="url(#glow)">
+                        <circle cx="30" cy="24" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.4s" repeatCount="indefinite" begin="0.1s" /></circle>
+                        <circle cx="30" cy="36" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite" begin="0.2s" /></circle>
+                        <circle cx="30" cy="48" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" begin="0.3s" /></circle>
+                        <circle cx="30" cy="60" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.3s" repeatCount="indefinite" begin="0.4s" /></circle>
+                        <circle cx="30" cy="72" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.4s" repeatCount="indefinite" begin="0.5s" /></circle>
+                      </g>
+
+                      {/* Core processing */}
+                      <g filter="url(#glowStrong)">
+                        <circle cx="50" cy="32" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.6s" repeatCount="indefinite" /></circle>
+                        <circle cx="50" cy="50" r="4" fill="#a855f7"><animate attributeName="opacity" values="0.6;1;0.6" dur="1.8s" repeatCount="indefinite" /><animate attributeName="r" values="3.5;5;3.5" dur="1.8s" repeatCount="indefinite" /></circle>
+                        <circle cx="50" cy="68" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.6s" repeatCount="indefinite" begin="0.4s" /></circle>
+                      </g>
+
+                      {/* Hidden layer 2 */}
+                      <g filter="url(#glow)">
+                        <circle cx="70" cy="24" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.3s" repeatCount="indefinite" begin="0.15s" /></circle>
+                        <circle cx="70" cy="36" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.4s" repeatCount="indefinite" begin="0.25s" /></circle>
+                        <circle cx="70" cy="48" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite" begin="0.35s" /></circle>
+                        <circle cx="70" cy="60" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" begin="0.45s" /></circle>
+                        <circle cx="70" cy="72" r="2" fill="#a855f7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.3s" repeatCount="indefinite" begin="0.55s" /></circle>
+                      </g>
+
+                      {/* Output layer */}
+                      <g filter="url(#glow)">
+                        <circle cx="88" cy="38" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.2s" repeatCount="indefinite" begin="0.2s" /></circle>
+                        <circle cx="88" cy="62" r="2.5" fill="#22d3d1"><animate attributeName="opacity" values="0.4;1;0.4" dur="1.4s" repeatCount="indefinite" begin="0.4s" /></circle>
+                      </g>
+
+                      {/* Connections - input to hidden1 */}
+                      <g stroke="#22d3d1" strokeWidth="0.3" opacity="0.5">
+                        <line x1="15" y1="28" x2="27" y2="24"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.7s" repeatCount="indefinite" /></line>
+                        <line x1="15" y1="28" x2="27" y2="36"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.8s" repeatCount="indefinite" begin="0.05s" /></line>
+                        <line x1="15" y1="42" x2="27" y2="36"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.75s" repeatCount="indefinite" begin="0.1s" /></line>
+                        <line x1="15" y1="42" x2="27" y2="48"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.85s" repeatCount="indefinite" begin="0.15s" /></line>
+                        <line x1="15" y1="56" x2="27" y2="48"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.7s" repeatCount="indefinite" begin="0.2s" /></line>
+                        <line x1="15" y1="56" x2="27" y2="60"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.8s" repeatCount="indefinite" begin="0.25s" /></line>
+                        <line x1="15" y1="70" x2="27" y2="60"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.75s" repeatCount="indefinite" begin="0.3s" /></line>
+                        <line x1="15" y1="70" x2="27" y2="72"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.85s" repeatCount="indefinite" begin="0.35s" /></line>
+                      </g>
+
+                      {/* Connections - hidden1 to core */}
+                      <g stroke="#a855f7" strokeWidth="0.3" opacity="0.5">
+                        <line x1="33" y1="24" x2="47" y2="32"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.9s" repeatCount="indefinite" begin="0.1s" /></line>
+                        <line x1="33" y1="36" x2="47" y2="50"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.95s" repeatCount="indefinite" begin="0.2s" /></line>
+                        <line x1="33" y1="48" x2="47" y2="50"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.85s" repeatCount="indefinite" begin="0.3s" /></line>
+                        <line x1="33" y1="60" x2="47" y2="50"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.9s" repeatCount="indefinite" begin="0.4s" /></line>
+                        <line x1="33" y1="72" x2="47" y2="68"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.95s" repeatCount="indefinite" begin="0.5s" /></line>
+                      </g>
+
+                      {/* Connections - core to hidden2 */}
+                      <g stroke="#a855f7" strokeWidth="0.3" opacity="0.5">
+                        <line x1="53" y1="32" x2="67" y2="24"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.9s" repeatCount="indefinite" begin="0.15s" /></line>
+                        <line x1="53" y1="50" x2="67" y2="36"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.85s" repeatCount="indefinite" begin="0.25s" /></line>
+                        <line x1="53" y1="50" x2="67" y2="48"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.95s" repeatCount="indefinite" begin="0.35s" /></line>
+                        <line x1="53" y1="50" x2="67" y2="60"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.9s" repeatCount="indefinite" begin="0.45s" /></line>
+                        <line x1="53" y1="68" x2="67" y2="72"><animate attributeName="stroke-opacity" values="0.1;0.6;0.1" dur="0.85s" repeatCount="indefinite" begin="0.55s" /></line>
+                      </g>
+
+                      {/* Connections - hidden2 to output */}
+                      <g stroke="#22d3d1" strokeWidth="0.3" opacity="0.5">
+                        <line x1="73" y1="24" x2="85" y2="38"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.75s" repeatCount="indefinite" begin="0.25s" /></line>
+                        <line x1="73" y1="36" x2="85" y2="38"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.8s" repeatCount="indefinite" begin="0.35s" /></line>
+                        <line x1="73" y1="48" x2="85" y2="38"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.7s" repeatCount="indefinite" begin="0.45s" /></line>
+                        <line x1="73" y1="48" x2="85" y2="62"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.85s" repeatCount="indefinite" begin="0.5s" /></line>
+                        <line x1="73" y1="60" x2="85" y2="62"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.75s" repeatCount="indefinite" begin="0.55s" /></line>
+                        <line x1="73" y1="72" x2="85" y2="62"><animate attributeName="stroke-opacity" values="0.1;0.7;0.1" dur="0.8s" repeatCount="indefinite" begin="0.6s" /></line>
+                      </g>
+
+                      {/* Data particles flowing through network */}
+                      <circle r="0.8" fill="#22d3d1"><animateMotion dur="1.8s" repeatCount="indefinite" path="M12,28 Q21,26 30,24 T50,32" /><animate attributeName="opacity" values="0;1;1;0" dur="1.8s" repeatCount="indefinite" /></circle>
+                      <circle r="0.8" fill="#a855f7"><animateMotion dur="2.2s" repeatCount="indefinite" path="M12,42 Q25,44 50,50 T88,38" begin="0.3s" /><animate attributeName="opacity" values="0;1;1;0" dur="2.2s" repeatCount="indefinite" begin="0.3s" /></circle>
+                      <circle r="0.8" fill="#22d3d1"><animateMotion dur="2s" repeatCount="indefinite" path="M12,56 Q35,54 50,50 T88,62" begin="0.6s" /><animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite" begin="0.6s" /></circle>
+                      <circle r="0.8" fill="#a855f7"><animateMotion dur="2.4s" repeatCount="indefinite" path="M12,70 Q30,68 50,68 T88,62" begin="0.9s" /><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite" begin="0.9s" /></circle>
+                    </svg>
+
+                    {/* Technical readouts - left side */}
+                    <div className="absolute -left-20 top-1/2 -translate-y-1/2 text-[7px] font-mono text-cyan-500/50 space-y-0.5 leading-tight">
+                      <div className="text-cyan-400/70 animate-pulse">INPUT_LAYER</div>
+                      <div>dim: 4x1</div>
+                      <div>type: float32</div>
+                      <div className="text-emerald-400/60">status: active</div>
+                    </div>
+
+                    {/* Technical readouts - right side */}
+                    <div className="absolute -right-20 top-1/2 -translate-y-1/2 text-[7px] font-mono text-cyan-500/50 space-y-0.5 text-right leading-tight">
+                      <div className="text-cyan-400/70 animate-pulse">OUTPUT_LAYER</div>
+                      <div>dim: 2x1</div>
+                      <div>softmax: true</div>
+                      <div className="text-amber-400/60">inferring...</div>
+                    </div>
+
+                    {/* Bottom status bar */}
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-8 text-[8px] font-mono space-y-1 text-center">
+                      <div className="text-purple-400/60">NEURAL_NET_v3.2.1 | layers: 5 | params: 847K</div>
+                      <div className="text-cyan-400/50 animate-pulse">INFERENCE_MODE :: BATCH_PROCESSING</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Paused Banner with Resume Button */}
+              {simulationState?.status === "paused" && (
+                <div className="mt-4 border border-amber-500/50 rounded-md bg-amber-500/10 p-4 flex items-center justify-between animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-400" />
+                    <div>
+                      <div className="text-sm font-medium text-amber-400">Simulation Paused</div>
+                      <div className="text-[10px] text-white/50">
+                        {selectedGameId ? "Viewing conversation replay" : "Click a match to view replay with voice"}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => void handleResume()}
+                    disabled={isResuming}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                      "bg-emerald-500 text-black hover:bg-emerald-400",
+                      "disabled:opacity-50 disabled:cursor-not-allowed"
+                    )}
+                  >
+                    {isResuming ? "Resuming..." : "▶ Resume Simulation"}
+                  </button>
+                </div>
+              )}
+
               {/* Selected Match Detail - Dramatic Playback */}
               {selectedGame && (
                 <div className="mt-4 border border-amber-500/30 rounded-md animate-fade-in bg-amber-500/5">
                   <div className="px-3 py-2 border-b border-amber-500/20 flex items-center justify-between">
-                    <span className="text-xs font-medium text-amber-400">MATCH REPLAY</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-amber-400">MATCH REPLAY</span>
+                      {isPlayingVoice && (
+                        <span className="flex items-center gap-0.5 text-emerald-400">
+                          <span className="w-0.5 h-2 bg-current animate-pulse" />
+                          <span className="w-0.5 h-3 bg-current animate-pulse delay-75" />
+                          <span className="w-0.5 h-1.5 bg-current animate-pulse delay-150" />
+                          <span className="text-[9px] ml-1">PLAYING</span>
+                        </span>
+                      )}
+                    </div>
                     <button
-                      onClick={() => setSelectedGameId(null)}
+                      onClick={() => void handleSelectGame(null)}
                       className="text-[10px] text-white/40 hover:text-white"
                     >
                       ✕
@@ -453,12 +658,44 @@ export default function App() {
                       <div className="border-t border-amber-500/20 pt-4">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[10px] font-medium text-amber-400">NEGOTIATION</span>
-                          <span className="text-[10px] text-white/30">
-                            {visibleMessages} / {messages.length}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {/* Play All Button */}
+                            <button
+                              onClick={() => {
+                                const allMessageIds = messages.map(m => m._id);
+                                playAllMessages(allMessageIds);
+                              }}
+                              disabled={isMuted || isPlayingVoice}
+                              className={cn(
+                                "text-[9px] px-2 py-1 rounded border transition-all flex items-center gap-1",
+                                isPlayingVoice
+                                  ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-400"
+                                  : isMuted
+                                  ? "border-white/10 text-white/20 cursor-not-allowed"
+                                  : "border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50"
+                              )}
+                              title={isMuted ? "Voice is muted" : isPlayingVoice ? "Playing..." : "Play full conversation"}
+                            >
+                              {isPlayingVoice ? (
+                                <>
+                                  <span className="flex items-center gap-0.5">
+                                    <span className="w-0.5 h-2 bg-emerald-400 animate-pulse" />
+                                    <span className="w-0.5 h-3 bg-emerald-400 animate-pulse delay-75" />
+                                    <span className="w-0.5 h-2 bg-emerald-400 animate-pulse delay-150" />
+                                  </span>
+                                  Playing
+                                </>
+                              ) : (
+                                <>▶ Play All</>
+                              )}
+                            </button>
+                            <span className="text-[10px] text-white/30">
+                              {visibleMessages} / {messages.length}
+                            </span>
+                          </div>
                         </div>
                         <div className="space-y-3 max-h-64 overflow-y-auto">
-                          {messages.slice(0, visibleMessages).map((msg, idx) => {
+                          {messages.slice(0, visibleMessages).map((msg) => {
                             const isAgentA = msg.senderId === selectedGame.agentAId;
                             return (
                               <div
@@ -494,11 +731,19 @@ export default function App() {
                                       </span>
                                     )}
                                     <button
-                                      onClick={() => playVoice(msg._id)}
-                                      disabled={isPlayingVoice}
-                                      className="text-[9px] text-white/30 hover:text-amber-400 transition-colors"
+                                      onClick={() => void playMessage(msg._id)}
+                                      disabled={isMuted}
+                                      className={cn(
+                                        "text-[9px] transition-colors",
+                                        currentMessageId === msg._id && isPlayingVoice
+                                          ? "text-emerald-400"
+                                          : isMuted
+                                          ? "text-white/20 cursor-not-allowed"
+                                          : "text-white/30 hover:text-amber-400"
+                                      )}
+                                      title={isMuted ? "Voice is muted" : "Play voice"}
                                     >
-                                      {isPlayingVoice ? "..." : "🔊"}
+                                      {currentMessageId === msg._id && isPlayingVoice ? "▶" : "🔊"}
                                     </button>
                                   </div>
                                   <div className="text-[11px] text-white/80 leading-relaxed">
@@ -525,6 +770,15 @@ export default function App() {
                         </div>
                       </div>
                     )}
+
+                    {/* Voice Q&A for Match */}
+                    {showDecisions && selectedGame.phase === "completed" && (
+                      <MatchVoiceQA
+                        gameId={selectedGame._id}
+                        agentA={selectedGame.agentA}
+                        agentB={selectedGame.agentB}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -543,7 +797,7 @@ export default function App() {
                       No data yet
                     </div>
                   ) : (
-                    <div className="h-32">
+                    <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
                           <XAxis
@@ -569,12 +823,12 @@ export default function App() {
                             labelStyle={{ color: '#888' }}
                           />
                           <Line
-                            type="monotone"
+                            type="natural"
                             dataKey="cooperation"
                             stroke="#10b981"
-                            strokeWidth={2}
-                            dot={{ fill: '#10b981', r: 2 }}
-                            activeDot={{ r: 4, fill: '#10b981' }}
+                            strokeWidth={2.5}
+                            dot={false}
+                            activeDot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -643,6 +897,107 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Agent Profile Modal */}
+      {selectedAgent && (
+        <AgentProfileModal
+          agent={selectedAgent}
+          rank={(agents?.findIndex(a => a._id === selectedAgent._id) ?? 0) + 1}
+          memories={memories}
+          evolution={evolution}
+          onClose={() => setSelectedAgentId(null)}
+          onViewMemoryAgent={(agentId) => void handleSelectAgent(agentId)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Voice Q&A component for match replay
+interface MatchVoiceQAProps {
+  gameId: Id<"games">;
+  agentA: { _id: Id<"agents">; name: string; badge: string; color: string } | null;
+  agentB: { _id: Id<"agents">; name: string; badge: string; color: string } | null;
+}
+
+function MatchVoiceQA({ gameId, agentA, agentB }: MatchVoiceQAProps) {
+  const [selectedAgent, setSelectedAgent] = useState<"A" | "B" | null>(null);
+
+  if (!agentA || !agentB) return null;
+
+  const currentAgent = selectedAgent === "A" ? agentA : selectedAgent === "B" ? agentB : null;
+
+  return (
+    <div className="border-t border-amber-500/20 pt-4 mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-medium text-purple-400 uppercase flex items-center gap-1">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+          Ask an Agent
+        </span>
+      </div>
+
+      {/* Agent Selection */}
+      {!selectedAgent && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedAgent("A")}
+            className={cn(
+              "flex-1 py-3 rounded-lg border border-white/10 hover:border-white/30",
+              "flex flex-col items-center gap-1 transition-colors hover:bg-white/5"
+            )}
+          >
+            <span
+              className="text-xs font-mono px-2 py-0.5 rounded"
+              style={{ backgroundColor: `${agentA.color}30`, color: agentA.color }}
+            >
+              {agentA.badge}
+            </span>
+            <span className="text-[10px] text-white/60">Ask {agentA.name}</span>
+          </button>
+          <button
+            onClick={() => setSelectedAgent("B")}
+            className={cn(
+              "flex-1 py-3 rounded-lg border border-white/10 hover:border-white/30",
+              "flex flex-col items-center gap-1 transition-colors hover:bg-white/5"
+            )}
+          >
+            <span
+              className="text-xs font-mono px-2 py-0.5 rounded"
+              style={{ backgroundColor: `${agentB.color}30`, color: agentB.color }}
+            >
+              {agentB.badge}
+            </span>
+            <span className="text-[10px] text-white/60">Ask {agentB.name}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Voice Q&A Interface */}
+      {selectedAgent && currentAgent && (
+        <div className="animate-fade-in">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-white/40">
+              Asking {currentAgent.name}
+            </span>
+            <button
+              onClick={() => setSelectedAgent(null)}
+              className="text-[10px] text-white/40 hover:text-white"
+            >
+              ← Change agent
+            </button>
+          </div>
+          <VoiceQA
+            agentId={currentAgent._id}
+            agentName={currentAgent.name}
+            agentBadge={currentAgent.badge}
+            agentColor={currentAgent.color}
+            gameId={gameId}
+            opponentId={selectedAgent === "A" ? agentB._id : agentA._id}
+          />
+        </div>
+      )}
     </div>
   );
 }

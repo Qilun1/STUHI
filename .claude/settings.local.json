@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(wsl tail:*)",
+      "Bash(more:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx eslint:*)",
+      "Bash(timeout:*)",
+      "Bash(npx convex run:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx convex deploy:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

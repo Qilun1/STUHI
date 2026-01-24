@@ -13,6 +13,7 @@ import type * as agents_memories from "../agents/memories.js";
 import type * as agents_mutations from "../agents/mutations.js";
 import type * as agents_personalities from "../agents/personalities.js";
 import type * as agents_queries from "../agents/queries.js";
+import type * as agents_voiceQA from "../agents/voiceQA.js";
 import type * as agents_voices from "../agents/voices.js";
 import type * as evolution_evolve from "../evolution/evolve.js";
 import type * as evolution_helpers from "../evolution/helpers.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   "agents/mutations": typeof agents_mutations;
   "agents/personalities": typeof agents_personalities;
   "agents/queries": typeof agents_queries;
+  "agents/voiceQA": typeof agents_voiceQA;
   "agents/voices": typeof agents_voices;
   "evolution/evolve": typeof evolution_evolve;
   "evolution/helpers": typeof evolution_helpers;

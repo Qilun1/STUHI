@@ -140,6 +140,18 @@ export const stats = query({
   },
 });
 
+// Alias for promptHistory - used by voiceQA
+export const evolutionHistory = query({
+  args: { agentId: v.id("agents") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("promptEvolutions")
+      .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
+      .order("desc")
+      .collect();
+  },
+});
+
 // Get full trust network for visualization
 export const trustNetwork = query({
   args: {},

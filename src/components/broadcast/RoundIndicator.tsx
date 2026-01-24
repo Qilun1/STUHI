@@ -18,7 +18,7 @@ export function RoundIndicator({ roundNumber, activeGameId, onGameSelect }: Roun
 
   return (
     <div className="flex items-center justify-center gap-3">
-      {games.map((game, index) => {
+      {games.map((game) => {
         const isActive = game._id === activeGameId;
         const isCompleted = game.phase === "completed";
         const isInProgress = game.phase !== "completed" && !isActive;

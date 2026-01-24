@@ -3,8 +3,9 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
+import OpenAI from "openai";
 
-// OpenAI API call helper with retry logic
+// OpenAI API call helper
 async function callOpenAI(
   messages: Array<{ role: string; content: string }>,
   options: { maxTokens?: number } = {}
@@ -15,49 +16,20 @@ async function callOpenAI(
     throw new Error("OPENAI_API_KEY not configured.");
   }
 
-  const url = "https://api.openai.com/v1/chat/completions";
-  const model = "gpt-4o-mini"; // Fast and cheap, non-reasoning model
+  const client = new OpenAI({ apiKey });
 
-  const maxRetries = 3;
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) {
-      const delay = Math.pow(2, attempt) * 500;
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: options.maxTokens || 150,
-        temperature: 0.8,
-        messages,
-      }),
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: messages as any,
+      max_tokens: options.maxTokens || 150,
+      temperature: 0.8,
     });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.choices?.[0]?.message?.content || "";
-    }
-
-    if (response.status === 429) {
-      const retryAfter = response.headers.get("Retry-After");
-      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 2000;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      continue;
-    }
-
-    const error = await response.text();
-    lastError = new Error(`OpenAI API error: ${response.status} - ${error}`);
+    return response.choices[0].message.content || "";
+  } catch (error: any) {
+    console.error("OpenAI API Error:", error.message);
+    throw error;
   }
-
-  throw lastError || new Error("Max retries exceeded");
 }
 
 // Context for LLM decisions
@@ -95,19 +67,19 @@ function buildContextPrompt(context: GameContext): string {
   const historyLines =
     context.pairHistory.length > 0
       ? context.pairHistory
-          .slice(-5) // Last 5 interactions
-          .map(
-            (h) =>
-              `Round ${h.round}: You ${h.myDecision.toUpperCase()}, they ${h.theirDecision.toUpperCase()} (promises: you="${h.myPromise}", them="${h.theirPromise}")`
-          )
-          .join("\n")
+        .slice(-5) // Last 5 interactions
+        .map(
+          (h) =>
+            `Round ${h.round}: You ${h.myDecision.toUpperCase()}, they ${h.theirDecision.toUpperCase()} (promises: you="${h.myPromise}", them="${h.theirPromise}")`
+        )
+        .join("\n")
       : "No previous history with this opponent.";
 
   const messageLines =
     context.currentMessages.length > 0
       ? context.currentMessages
-          .map((m) => `${m.sender}: "${m.content}"`)
-          .join("\n")
+        .map((m) => `${m.sender}: "${m.content}"`)
+        .join("\n")
       : "No messages yet in this negotiation.";
 
   return `GAME: Split or Steal (Prisoner's Dilemma with negotiation)
@@ -226,10 +198,10 @@ export const generateNegotiationMessage = internalAction({
           role: "user",
           content: `${contextPrompt}
 
-Message ${args.messageNumber}/3. Write ONE short sentence (max 15 words). Stay in character.`,
+Message ${args.messageNumber}/3. Write 1-2 sentences (20-35 words). Be persuasive and stay in character. Express your strategy and intentions clearly.`,
         },
       ],
-      { maxTokens: 50 }
+      { maxTokens: 100 }
     );
 
     return content || "...";

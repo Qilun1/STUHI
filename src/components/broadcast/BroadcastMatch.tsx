@@ -18,7 +18,7 @@ const phaseLabels: Record<string, string> = {
   completed: "Complete",
 };
 
-export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
+export function BroadcastMatch({ gameId, onComplete: _onComplete }: BroadcastMatchProps) {
   const game = useQuery(api.games.getForReenactment, { gameId });
   const agents = useQuery(api.agents.queries.list);
 
@@ -107,8 +107,8 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
                 <TypewriterMessage
                   key={lastMessage._id}
                   content={lastMessage.content}
-                  senderName={lastMessage.senderName}
-                  senderColor={lastMessage.senderColor}
+                  senderName={lastMessage.senderName ?? "Unknown"}
+                  senderColor={lastMessage.senderColor ?? "#888888"}
                   isAgentA={lastMessage.isAgentA}
                 />
                 <div className="flex justify-center gap-1 mt-4">

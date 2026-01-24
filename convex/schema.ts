@@ -12,7 +12,18 @@ const agentType = v.union(
   v.literal("paranoid"),
   v.literal("healer"),
   v.literal("wildcard"),
-  v.literal("mirror")
+  v.literal("mirror"),
+  // New agents
+  v.literal("gambler"),
+  v.literal("detective"),
+  v.literal("manipulator"),
+  v.literal("optimist"),
+  v.literal("calculator"),
+  v.literal("predator"),
+  v.literal("phoenix"),
+  v.literal("loyalist"),
+  v.literal("contrarian"),
+  v.literal("survivor")
 );
 
 // Game phase states
@@ -167,6 +178,42 @@ export default defineSchema({
     parentVersion: v.optional(v.number()),
     evolutionReason: v.string(),
     selfReflection: v.optional(v.string()),
+
+    // Enhanced evolution analysis
+    triggerEvents: v.optional(v.array(v.object({
+      type: v.string(), // "betrayal", "loss_streak", "win_streak", "low_performance", "enemy_identified"
+      description: v.string(),
+      opponent: v.optional(v.string()),
+      round: v.optional(v.number()),
+      impact: v.optional(v.string()), // "high", "medium", "low"
+    }))),
+    keyMoments: v.optional(v.array(v.object({
+      round: v.number(),
+      opponent: v.string(),
+      event: v.string(), // "betrayed_by", "betrayed", "mutual_cooperation", "mutual_defection"
+      score: v.number(),
+      significance: v.string(), // Why this moment mattered
+    }))),
+    strategyChanges: v.optional(v.array(v.string())), // List of what changed from previous version
+    enemiesIdentified: v.optional(v.array(v.string())), // Agents marked as enemies this evolution
+    alliesIdentified: v.optional(v.array(v.string())), // Agents marked as trustworthy
+    performanceAnalysis: v.optional(v.string()), // Detailed analysis of what was failing/working
+    previousPromptSummary: v.optional(v.string()), // Summary of previous strategy for comparison
+    roundRange: v.optional(v.object({
+      start: v.number(),
+      end: v.number(),
+    })),
+    betrayalsReceived: v.optional(v.number()),
+    betrayalsMade: v.optional(v.number()),
+
+    // Agent's emotional/psychological state after this evolution
+    emotionalState: v.optional(v.string()), // e.g., "betrayed and vengeful", "confident", "cautious"
+    lessonLearned: v.optional(v.string()), // One key takeaway in 10 words or less
+
+    // Rich narrative fields for storytelling
+    evolutionNarrative: v.optional(v.string()), // Third-person story of why evolution happened
+    nemesis: v.optional(v.string()), // Name of biggest enemy/rival
+    ally: v.optional(v.string()), // Name of most trusted ally
 
     createdAt: v.number(),
   })

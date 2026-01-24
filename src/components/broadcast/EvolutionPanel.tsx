@@ -124,22 +124,30 @@ export function EvolutionPanel({ agentId, onClose }: EvolutionPanelProps) {
                     </span>
                   </div>
 
-                  <div className="text-sm text-foreground mb-2">
-                    {evolution.evolutionReason}
-                  </div>
-
                   {/* Performance at evolution */}
-                  <div className="flex gap-4 text-xs text-muted-foreground">
+                  <div className="flex gap-4 text-xs text-muted-foreground mb-2">
                     <span>Win: {Math.round(evolution.winRate * 100)}%</span>
                     <span>Avg: {evolution.averageScore.toFixed(1)}</span>
                     <span>Coop: {Math.round(evolution.cooperationRate * 100)}%</span>
                   </div>
 
                   {evolution.selfReflection && (
-                    <div className="mt-2 text-xs text-muted-foreground italic border-t border-border pt-2">
+                    <div className="text-xs text-muted-foreground italic border-t border-border pt-2 mb-2">
                       "{evolution.selfReflection}"
                     </div>
                   )}
+
+                  {/* Full Evolution Report */}
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-evolve hover:text-evolve/80 transition-colors">
+                      View full evolution report
+                    </summary>
+                    <div className="mt-2 bg-elevated/50 p-2 rounded text-muted-foreground max-h-48 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap font-sans leading-relaxed">
+                        {evolution.evolutionReason}
+                      </pre>
+                    </div>
+                  </details>
                 </div>
               </div>
             ))}

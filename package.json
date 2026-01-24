@@ -4,14 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bunx convex dev --until-success && bunx convex dashboard & bun run dev:frontend & bun run dev:backend",
-    "dev:frontend": "bunx vite --open",
-    "dev:backend": "bunx convex dev",
-    "build": "bunx tsc -b && bunx vite build",
-    "lint": "bunx tsc && bunx eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "bunx vite preview"
+    "dev": "npm-run-all --parallel dev:frontend dev:backend",
+    "dev:frontend": "npx vite --open",
+    "dev:backend": "npx convex dev",
+    "build": "npx tsc -b && npx vite build",
+    "lint": "npx tsc && npx eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "npx vite preview"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.32.0",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",

@@ -1,11 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
+/* Fonts loaded via index.html */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,16 +125,20 @@
 
 /* Custom utility classes */
 @layer utilities {
+
   /* Monochrome text - split = white, steal = gray */
   .text-split {
     color: #ffffff;
   }
+
   .text-steal {
     color: #666666;
   }
+
   .text-negotiate {
     color: #888888;
   }
+
   .text-evolve {
     color: #aaaaaa;
   }
@@ -148,9 +147,11 @@
   .bg-void {
     background-color: #000000;
   }
+
   .bg-surface {
     background-color: #0a0a0a;
   }
+
   .bg-elevated {
     background-color: #141414;
   }
@@ -159,14 +160,22 @@
   .glow-split {
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
   }
+
   .glow-steal {
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
   }
 
   /* Animations */
   @keyframes subtle-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
   }
 
   .animate-subtle-pulse {
@@ -174,8 +183,16 @@
   }
 
   @keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
+
+    0%,
+    50% {
+      opacity: 1;
+    }
+
+    51%,
+    100% {
+      opacity: 0;
+    }
   }
 
   .animate-cursor {
@@ -183,8 +200,13 @@
   }
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
 
   .animate-fade-in {
@@ -192,8 +214,32 @@
   }
 
   @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.98); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Neural pulse animation for AI brain */
+  @keyframes neuralPulse {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0.5;
+    }
+
+    50% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateX(100%);
+      opacity: 0.5;
+    }
   }
 
   .animate-scale-in {
