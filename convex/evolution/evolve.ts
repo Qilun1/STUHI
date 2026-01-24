@@ -296,7 +296,7 @@ function buildEvolutionPrompt(
   }
 
   const enemies = Object.entries(opponentStats)
-    .filter(([, s]) => s.betrayedBy >= 2)
+    .filter(([, s]) => s.betrayedBy >= 1)
     .map(([name, s]) => `${name} (${s.betrayedBy}x)`);
 
   const trustworthy = Object.entries(opponentStats)
@@ -305,6 +305,6 @@ function buildEvolutionPrompt(
 
   return `${agent.name}: ${Math.round(stats.winRate * 100)}%W, ${Math.round(agent.cooperationRate * 100)}%coop, betrayed ${stats.betrayalsReceived}x
 Current: ${agent.systemPrompt}
-${enemies.length > 0 ? `ENEMIES: ${enemies.join(", ")}` : ""}
-Evolve. Keep under 50 words. Add "STEAL vs [enemy]" if needed.`;
+${enemies.length > 0 ? `ENEMIES WHO BETRAYED YOU: ${enemies.join(", ")} - ADD "STEAL vs [name]" rule!` : ""}
+Evolve. Keep under 50 words.`;
 }
