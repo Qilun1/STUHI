@@ -3,26 +3,61 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
-import OpenAI from "openai";
 
-// Azure OpenAI client
-function getOpenAIClient() {
-  const apiKey = process.env.AZURE_OPENAI_API_KEY;
-  const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o-mini";
+// OpenAI API call helper with retry logic
+async function callOpenAI(
+  messages: Array<{ role: string; content: string }>,
+  options: { maxTokens?: number } = {}
+): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
 
-  if (!apiKey || !endpoint) {
-    throw new Error(
-      "Azure OpenAI credentials not configured. Set AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT."
-    );
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY not configured.");
   }
 
-  return new OpenAI({
-    apiKey,
-    baseURL: `${endpoint}/openai/deployments/${deployment}`,
-    defaultQuery: { "api-version": "2024-02-15-preview" },
-    defaultHeaders: { "api-key": apiKey },
-  });
+  const url = "https://api.openai.com/v1/chat/completions";
+  const model = "gpt-4o-mini"; // Fast and cheap, non-reasoning model
+
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.pow(2, attempt) * 500;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: options.maxTokens || 150,
+        temperature: 0.8,
+        messages,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "";
+    }
+
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After");
+      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 2000;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      continue;
+    }
+
+    const error = await response.text();
+    lastError = new Error(`OpenAI API error: ${response.status} - ${error}`);
+  }
+
+  throw lastError || new Error("Max retries exceeded");
 }
 
 // Context for LLM decisions
@@ -183,13 +218,9 @@ export const generateNegotiationMessage = internalAction({
 
     const contextPrompt = buildContextPrompt(context);
 
-    // Call LLM
-    const client = getOpenAIClient();
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 150,
-      temperature: 0.8,
-      messages: [
+    // Call OpenAI
+    const content = await callOpenAI(
+      [
         { role: "system", content: agent.systemPrompt },
         {
           role: "user",
@@ -200,9 +231,10 @@ Write your negotiation message to your opponent. Be strategic and stay in charac
 Keep it concise (1-3 sentences). Do not include any metadata or formatting, just the message itself.`,
         },
       ],
-    });
+      { maxTokens: 150 }
+    );
 
-    return response.choices[0]?.message?.content || "...";
+    return content || "...";
   },
 });
 
@@ -286,13 +318,9 @@ export const generateDecision = internalAction({
 
     const contextPrompt = buildContextPrompt(context);
 
-    // Call LLM for decision
-    const client = getOpenAIClient();
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 100,
-      temperature: 0.3, // Lower temperature for more consistent decisions
-      messages: [
+    // Call OpenAI for decision
+    const content = await callOpenAI(
+      [
         { role: "system", content: agent.systemPrompt },
         {
           role: "user",
@@ -304,9 +332,8 @@ Respond with ONLY a JSON object in this exact format:
 {"decision": "split" or "steal", "reasoning": "brief explanation (10 words max)"}`,
         },
       ],
-    });
-
-    const content = response.choices[0]?.message?.content || "";
+      { maxTokens: 100 }
+    );
 
     try {
       // Parse JSON response

@@ -50,7 +50,7 @@ export function ChatLog({
       ref={scrollRef}
       className="h-full overflow-y-auto border-2 border-border divide-y divide-border"
     >
-      {displayMessages.map((message, index) => (
+      {displayMessages.map((message) => (
         <ChatMessage
           key={message._id}
           senderName={message.senderName}
@@ -60,7 +60,7 @@ export function ChatLog({
           content={message.content}
           isAgentA={message.isAgentA}
           isVisible={true}
-          isTyping={isTyping && index === displayMessages.length - 1}
+          isTyping={false}
         />
       ))}
 

@@ -41,7 +41,7 @@ export const runRound = action({
       state.gamesPerRound
     );
 
-    // Process all games in parallel for speed
+    // Process games in parallel (OpenAI has high rate limits)
     const gamePromises = pairings.map(([agentAId, agentBId]) =>
       ctx.runAction(internal.simulation.orchestrator.processGame, {
         roundNumber,
@@ -140,7 +140,7 @@ export const processGame = internalAction({
         { message: messageB }
       );
       if (promiseB === "split" || promiseB === "steal") {
-        promises.B = promiseB;
+        promises.B = promiseB as "split" | "steal";
       }
 
       // Store Agent B's message
