@@ -203,14 +203,14 @@ export const generateNegotiationMessage = internalAction({
         promiseKeepingRate: opponentStats?.promiseKeepingRate || 0,
       },
       trustScore: trustRelation?.trustScore || 0,
-      pairHistory: pairHistory.slice(-5).map((h) => ({
+      pairHistory: pairHistory.slice(-5).map((h: any) => ({
         round: h.roundNumber,
         myDecision: h.myDecision,
         theirDecision: h.theirDecision,
         myPromise: h.myPromise,
         theirPromise: h.theirPromise,
       })),
-      currentMessages: messages.map((m) => ({
+      currentMessages: messages.map((m: any) => ({
         sender: m.senderId === args.agentId ? agent.badge : opponent.badge,
         content: m.content,
       })),
@@ -303,14 +303,14 @@ export const generateDecision = internalAction({
         promiseKeepingRate: opponentStats?.promiseKeepingRate || 0,
       },
       trustScore: trustRelation?.trustScore || 0,
-      pairHistory: pairHistory.slice(-5).map((h) => ({
+      pairHistory: pairHistory.slice(-5).map((h: any) => ({
         round: h.roundNumber,
         myDecision: h.myDecision,
         theirDecision: h.theirDecision,
         myPromise: h.myPromise,
         theirPromise: h.theirPromise,
       })),
-      currentMessages: messages.map((m) => ({
+      currentMessages: messages.map((m: any) => ({
         sender: m.senderId === args.agentId ? agent.badge : opponent.badge,
         content: m.content,
       })),

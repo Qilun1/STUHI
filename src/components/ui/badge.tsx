@@ -5,31 +5,31 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center border-2 px-2 py-0.5 text-xs font-bold font-mono uppercase tracking-wider w-fit whitespace-nowrap shrink-0 transition-none",
+  "inline-flex items-center justify-center border px-2 py-0.5 text-xs font-medium font-mono rounded-md w-fit whitespace-nowrap shrink-0 transition-colors backdrop-blur-sm",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground border-primary",
-        secondary: "bg-secondary text-secondary-foreground border-border",
-        destructive: "bg-destructive text-white border-destructive",
-        outline: "border-border text-foreground bg-transparent",
-        ghost: "border-transparent text-muted-foreground",
+        default: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
+        secondary: "bg-zinc-800/50 text-zinc-400 border-zinc-700/50",
+        destructive: "bg-red-500/10 text-red-400 border-red-500/30",
+        outline: "border-zinc-700 text-zinc-400 bg-transparent",
+        ghost: "border-transparent text-zinc-500 bg-transparent",
         // Game state badges
-        split: "bg-split text-void border-split",
-        steal: "bg-steal text-white border-steal",
-        negotiate: "bg-negotiate text-void border-negotiate",
-        evolve: "bg-evolve text-white border-evolve",
-        // Agent badges - each agent gets their color
-        diplomat: "bg-transparent border-[#4ade80] text-[#4ade80]",
-        shark: "bg-transparent border-[#f43f5e] text-[#f43f5e]",
-        saint: "bg-transparent border-[#fbbf24] text-[#fbbf24]",
-        grudger: "bg-transparent border-[#8b5cf6] text-[#8b5cf6]",
-        analyst: "bg-transparent border-[#06b6d4] text-[#06b6d4]",
-        charmer: "bg-transparent border-[#ec4899] text-[#ec4899]",
-        paranoid: "bg-transparent border-[#64748b] text-[#64748b]",
-        healer: "bg-transparent border-[#22d3ee] text-[#22d3ee]",
-        wildcard: "bg-transparent border-[#f97316] text-[#f97316]",
-        mirror: "bg-transparent border-[#a3e635] text-[#a3e635]",
+        split: "bg-green-500/10 text-green-400 border-green-500/30",
+        steal: "bg-red-500/10 text-red-400 border-red-500/30",
+        negotiate: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+        evolve: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+        // Agent badges with glass morphism
+        diplomat: "bg-green-500/10 border-green-500/30 text-green-400",
+        shark: "bg-rose-500/10 border-rose-500/30 text-rose-400",
+        saint: "bg-amber-500/10 border-amber-500/30 text-amber-400",
+        grudger: "bg-violet-500/10 border-violet-500/30 text-violet-400",
+        analyst: "bg-cyan-500/10 border-cyan-500/30 text-cyan-400",
+        charmer: "bg-pink-500/10 border-pink-500/30 text-pink-400",
+        paranoid: "bg-slate-500/10 border-slate-500/30 text-slate-400",
+        healer: "bg-sky-500/10 border-sky-500/30 text-sky-400",
+        wildcard: "bg-orange-500/10 border-orange-500/30 text-orange-400",
+        mirror: "bg-lime-500/10 border-lime-500/30 text-lime-400",
       },
     },
     defaultVariants: {

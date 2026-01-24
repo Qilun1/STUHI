@@ -4,6 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import { AgentPortrait } from "./AgentPortrait";
 import { TypewriterMessage } from "./TypewriterMessage";
 import { cn } from "@/lib/utils";
+import { CircleDashed, ChatCircle, Brain, Eye } from "@phosphor-icons/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 interface BroadcastMatchProps {
@@ -11,11 +12,11 @@ interface BroadcastMatchProps {
   onComplete?: () => void;
 }
 
-const phaseLabels: Record<string, string> = {
-  negotiation: "Negotiating",
-  decision: "Deciding",
-  reveal: "Revealing",
-  completed: "Complete",
+const phaseConfig: Record<string, { label: string; bgColor: string; textColor: string }> = {
+  negotiation: { label: "Negotiating", bgColor: "bg-amber-500/10", textColor: "text-amber-400" },
+  decision: { label: "Deciding", bgColor: "bg-purple-500/10", textColor: "text-purple-400" },
+  reveal: { label: "Revealing", bgColor: "bg-red-500/10", textColor: "text-red-400" },
+  completed: { label: "Complete", bgColor: "bg-green-500/10", textColor: "text-green-400" },
 };
 
 export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
@@ -56,7 +57,7 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
   if (!game) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading match...</div>
+        <div className="text-zinc-500">Loading match...</div>
       </div>
     );
   }
@@ -68,17 +69,23 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
   const isDeciding = game.phase === "decision";
   const isRevealing = game.phase === "reveal" || game.phase === "completed";
 
+  const { label, bgColor, textColor } = phaseConfig[game.phase];
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gradient-radial">
       {/* Phase Indicator */}
       <div className="text-center py-4">
         <span className={cn(
-          "text-sm font-medium px-4 py-1.5 rounded-full",
-          isNegotiating && "bg-negotiate/10 text-negotiate",
-          isDeciding && "bg-evolve/10 text-evolve",
-          isRevealing && "bg-split/10 text-split"
+          "inline-flex items-center gap-2 text-sm font-medium px-4 py-1.5 rounded-full border",
+          bgColor, textColor,
+          isNegotiating && "border-amber-500/30",
+          isDeciding && "border-purple-500/30",
+          isRevealing && "border-green-500/30"
         )}>
-          {phaseLabels[game.phase]}
+          {isNegotiating && <ChatCircle className="size-4" weight="duotone" />}
+          {isDeciding && <Brain className="size-4" weight="duotone" />}
+          {isRevealing && <Eye className="size-4" weight="duotone" />}
+          {label}
         </span>
       </div>
 
@@ -111,15 +118,15 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
                   senderColor={lastMessage.senderColor}
                   isAgentA={lastMessage.isAgentA}
                 />
-                <div className="flex justify-center gap-1 mt-4">
+                <div className="flex justify-center gap-1.5 mt-4">
                   {[...Array(6)].map((_, i) => (
                     <div
                       key={i}
                       className={cn(
                         "w-2 h-2 rounded-full transition-all",
                         i < game.messages.length
-                          ? "bg-foreground"
-                          : "bg-muted-foreground/30"
+                          ? "bg-cyan-400"
+                          : "bg-zinc-700"
                       )}
                     />
                   ))}
@@ -127,26 +134,26 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
               </div>
             ) : isDeciding ? (
               <div className="text-center">
-                <div className="text-6xl mb-4 animate-subtle-pulse">🤔</div>
-                <div className="text-muted-foreground text-sm">
+                <CircleDashed className="size-16 text-purple-400 animate-spin-slow mx-auto mb-4" weight="duotone" />
+                <div className="text-zinc-500 text-sm">
                   Agents are making their decisions...
                 </div>
               </div>
             ) : isRevealing ? (
               <div className="text-center">
-                <div className="text-4xl font-bold text-muted-foreground mb-2">VS</div>
+                <div className="text-4xl font-bold text-zinc-600 mb-2">VS</div>
                 {showOutcome && (
                   <div className="animate-fade-in">
                     {game.agentADecision === "split" && game.agentBDecision === "split" ? (
-                      <div className="text-split text-lg font-semibold">
+                      <div className="text-green-400 text-lg font-semibold">
                         Mutual Cooperation
                       </div>
                     ) : game.agentADecision === "steal" && game.agentBDecision === "steal" ? (
-                      <div className="text-steal text-lg font-semibold">
+                      <div className="text-red-400 text-lg font-semibold">
                         Mutual Betrayal
                       </div>
                     ) : (
-                      <div className="text-negotiate text-lg font-semibold">
+                      <div className="text-amber-400 text-lg font-semibold">
                         Betrayal
                       </div>
                     )}
@@ -154,7 +161,7 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
                 )}
               </div>
             ) : (
-              <div className="text-4xl font-bold text-muted-foreground">VS</div>
+              <div className="text-4xl font-bold text-zinc-600">VS</div>
             )}
           </div>
 
@@ -182,13 +189,13 @@ export function BroadcastMatch({ gameId, onComplete }: BroadcastMatchProps) {
             <div className="text-3xl font-bold font-mono" style={{ color: game.agentA?.color }}>
               +{game.agentAScore ?? 0}
             </div>
-            <div className="text-xs text-muted-foreground mt-1">points</div>
+            <div className="text-xs text-zinc-500 mt-1">points</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold font-mono" style={{ color: game.agentB?.color }}>
               +{game.agentBScore ?? 0}
             </div>
-            <div className="text-xs text-muted-foreground mt-1">points</div>
+            <div className="text-xs text-zinc-500 mt-1">points</div>
           </div>
         </div>
       )}

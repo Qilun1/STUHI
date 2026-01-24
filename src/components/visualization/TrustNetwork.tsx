@@ -8,7 +8,7 @@ export function TrustNetwork() {
 
   if (!agents || agents.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+      <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
         No agents to display
       </div>
     );
@@ -31,10 +31,10 @@ export function TrustNetwork() {
             <div
               key={agent._id}
               className={cn(
-                "relative p-2 border-2 text-center transition-all",
-                avgTrust > 20 && "border-split bg-split/10",
-                avgTrust < -20 && "border-steal bg-steal/10",
-                avgTrust >= -20 && avgTrust <= 20 && "border-border bg-elevated"
+                "relative p-2.5 rounded-lg border text-center transition-all",
+                avgTrust > 20 && "border-green-500/30 bg-green-500/5 shadow-lg shadow-green-500/10",
+                avgTrust < -20 && "border-red-500/30 bg-red-500/5 shadow-lg shadow-red-500/10",
+                avgTrust >= -20 && avgTrust <= 20 && "border-zinc-800/50 bg-zinc-800/30"
               )}
             >
               {/* Agent badge */}
@@ -47,22 +47,22 @@ export function TrustNetwork() {
 
               {/* Trust indicator */}
               <div className={cn(
-                "text-xs",
-                avgTrust > 0 ? "text-split" : avgTrust < 0 ? "text-steal" : "text-muted-foreground"
+                "text-xs font-mono font-semibold",
+                avgTrust > 0 ? "text-green-400" : avgTrust < 0 ? "text-red-400" : "text-zinc-500"
               )}>
                 {avgTrust > 0 ? "+" : ""}{Math.round(avgTrust)}
               </div>
 
               {/* Cooperation rate bar */}
-              <div className="mt-1 h-1 bg-border overflow-hidden">
+              <div className="mt-1.5 h-1 bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-split transition-all"
+                  className="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all rounded-full"
                   style={{ width: `${agent.cooperationRate * 100}%` }}
                 />
               </div>
 
               {/* Score */}
-              <div className="text-[10px] text-muted-foreground mt-1">
+              <div className="text-[10px] text-zinc-500 mt-1 font-mono">
                 {agent.totalScore} pts
               </div>
             </div>
@@ -71,17 +71,17 @@ export function TrustNetwork() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-split" />
+      <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-zinc-500">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-sm bg-green-400" />
           <span>Trusted</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-steal" />
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-sm bg-red-400" />
           <span>Distrusted</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-border" />
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-sm bg-zinc-600" />
           <span>Neutral</span>
         </div>
       </div>

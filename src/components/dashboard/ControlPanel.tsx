@@ -1,7 +1,8 @@
 import { useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Play, Pause, GearSix, CircleNotch } from "@phosphor-icons/react";
 
 interface ControlPanelProps {
   simulationStatus?: "running" | "paused" | "stopped";
@@ -53,37 +54,42 @@ export function ControlPanel({ simulationStatus, hasAgents }: ControlPanelProps)
 
   return (
     <div className="flex items-center gap-2">
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleSetup}
         disabled={isSettingUp || simulationStatus === "running"}
-        className={cn(
-          "px-3 py-1.5 text-xs font-medium border border-white/20 rounded",
-          "hover:bg-white/10 transition-colors",
-          "disabled:opacity-30 disabled:cursor-not-allowed"
-        )}
       >
-        {isSettingUp ? "..." : "Setup"}
-      </button>
+        {isSettingUp ? (
+          <CircleNotch className="size-4 animate-spin" />
+        ) : (
+          <GearSix className="size-4" weight="duotone" />
+        )}
+        Setup
+      </Button>
 
       {simulationStatus === "running" ? (
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handlePause}
-          className="px-3 py-1.5 text-xs font-medium bg-white text-black rounded hover:bg-white/90 transition-colors"
         >
+          <Pause className="size-4" weight="fill" />
           Pause
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
+          size="sm"
           onClick={handleStart}
           disabled={!hasAgents || isRunning}
-          className={cn(
-            "px-3 py-1.5 text-xs font-medium bg-white text-black rounded",
-            "hover:bg-white/90 transition-colors",
-            "disabled:opacity-30 disabled:cursor-not-allowed"
-          )}
         >
-          {isRunning ? "..." : "Start"}
-        </button>
+          {isRunning ? (
+            <CircleNotch className="size-4 animate-spin" />
+          ) : (
+            <Play className="size-4" weight="fill" />
+          )}
+          Start
+        </Button>
       )}
     </div>
   );

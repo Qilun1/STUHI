@@ -15,7 +15,10 @@ export function ActiveMatches({ roundNumber, onSelectGame }: ActiveMatchesProps)
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-32 bg-elevated animate-pulse border-2 border-border" />
+          <div
+            key={i}
+            className="h-32 bg-zinc-900/50 animate-pulse rounded-xl border border-zinc-800/50"
+          />
         ))}
       </div>
     );
@@ -23,7 +26,7 @@ export function ActiveMatches({ roundNumber, onSelectGame }: ActiveMatchesProps)
 
   if (games.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-muted-foreground">
+      <div className="flex items-center justify-center h-32 text-zinc-500 bg-zinc-900/30 rounded-xl border border-zinc-800/30">
         No games in this round yet
       </div>
     );
@@ -33,7 +36,7 @@ export function ActiveMatches({ roundNumber, onSelectGame }: ActiveMatchesProps)
   const activeGameId = games.find((g) => g.phase !== "completed")?._id;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 stagger-children">
       {games.map((game) => (
         <MatchCard
           key={game._id}

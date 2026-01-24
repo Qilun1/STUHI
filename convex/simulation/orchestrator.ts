@@ -37,7 +37,7 @@ export const runRound = action({
 
     // Create random pairings (5 games for 10 agents)
     const pairings = createRandomPairings(
-      agents.map((a) => a._id),
+      agents.map((a: any) => a._id),
       state.gamesPerRound
     );
 

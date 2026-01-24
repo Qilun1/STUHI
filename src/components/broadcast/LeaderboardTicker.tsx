@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { Trophy, Medal } from "@phosphor-icons/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 interface LeaderboardTickerProps {
@@ -30,18 +31,23 @@ export function LeaderboardTicker({ highlightAgentId, onAgentClick }: Leaderboar
             onClick={() => onAgentClick?.(agent._id)}
             className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all whitespace-nowrap",
-              "hover:bg-elevated",
-              isHighlighted && "bg-elevated ring-1 ring-primary/50",
+              "hover:bg-zinc-800/50",
+              isHighlighted && "bg-zinc-800/70 ring-1 ring-cyan-500/30",
               !isHighlighted && "bg-transparent"
             )}
           >
-            {/* Rank */}
-            <span className={cn(
-              "text-xs font-medium w-4",
-              isTop3 ? "text-negotiate" : "text-muted-foreground"
-            )}>
-              {index + 1}
-            </span>
+            {/* Rank with trophy/medal icons for top 3 */}
+            {index === 0 ? (
+              <Trophy className="size-4 text-amber-400" weight="fill" />
+            ) : index === 1 ? (
+              <Medal className="size-4 text-zinc-300" weight="fill" />
+            ) : index === 2 ? (
+              <Medal className="size-4 text-amber-600" weight="fill" />
+            ) : (
+              <span className="text-xs font-medium w-4 text-zinc-500 font-mono">
+                {index + 1}
+              </span>
+            )}
 
             {/* Badge */}
             <span
@@ -52,16 +58,16 @@ export function LeaderboardTicker({ highlightAgentId, onAgentClick }: Leaderboar
             </span>
 
             {/* Score */}
-            <span className="text-xs font-mono text-foreground">
+            <span className="text-xs font-mono text-zinc-300">
               {agent.totalScore}
             </span>
 
             {/* Cooperation indicator */}
             <div className={cn(
               "w-1.5 h-1.5 rounded-full",
-              agent.cooperationRate >= 0.7 ? "bg-split" :
-              agent.cooperationRate >= 0.4 ? "bg-negotiate" :
-              "bg-steal"
+              agent.cooperationRate >= 0.7 ? "bg-green-400" :
+              agent.cooperationRate >= 0.4 ? "bg-amber-400" :
+              "bg-red-400"
             )} />
           </button>
         );

@@ -39,7 +39,7 @@ export function ChatLog({
 
   if (messages.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+      <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
         No messages yet
       </div>
     );
@@ -48,7 +48,7 @@ export function ChatLog({
   return (
     <div
       ref={scrollRef}
-      className="h-full overflow-y-auto border-2 border-border divide-y divide-border"
+      className="h-full overflow-y-auto rounded-xl border border-zinc-800/50 divide-y divide-zinc-800/50"
     >
       {displayMessages.map((message) => (
         <ChatMessage

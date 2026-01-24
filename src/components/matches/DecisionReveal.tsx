@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Handshake, ShieldSlash } from "@phosphor-icons/react";
 
 interface Agent {
   name: string;
@@ -37,30 +38,37 @@ function DecisionCard({
       <Badge variant={(agent?.type as "diplomat") ?? "outline"}>
         {agent?.badge ?? "???"}
       </Badge>
-      <div className="text-xs text-muted-foreground">{agent?.name}</div>
+      <div className="text-xs text-zinc-500">{agent?.name}</div>
 
       {/* Decision Card */}
       <div
         className={cn(
-          "w-24 h-32 flex items-center justify-center border-2 transition-all duration-500",
+          "w-24 h-32 flex flex-col items-center justify-center rounded-xl border transition-all duration-500",
           revealed
             ? decision === "split"
-              ? "bg-split/20 border-split"
-              : "bg-steal/20 border-steal"
-            : "bg-elevated border-border"
+              ? "bg-green-500/10 border-green-500/30 shadow-lg shadow-green-500/20"
+              : "bg-red-500/10 border-red-500/30 shadow-lg shadow-red-500/20"
+            : "bg-zinc-800/50 border-zinc-700/50"
         )}
       >
         {revealed ? (
-          <span
-            className={cn(
-              "font-bold text-lg",
-              decision === "split" ? "text-split" : "text-steal"
+          <>
+            {decision === "split" ? (
+              <Handshake className="size-8 text-green-400 mb-1" weight="fill" />
+            ) : (
+              <ShieldSlash className="size-8 text-red-400 mb-1" weight="fill" />
             )}
-          >
-            {decision?.toUpperCase()}
-          </span>
+            <span
+              className={cn(
+                "font-bold text-sm",
+                decision === "split" ? "text-green-400" : "text-red-400"
+              )}
+            >
+              {decision?.toUpperCase()}
+            </span>
+          </>
         ) : (
-          <span className="text-3xl text-muted-foreground">?</span>
+          <span className="text-3xl text-zinc-600">?</span>
         )}
       </div>
 
@@ -68,8 +76,8 @@ function DecisionCard({
       {showScore && score !== undefined && (
         <div
           className={cn(
-            "text-2xl font-bold transition-all duration-300",
-            score > 0 ? "text-split" : "text-muted-foreground"
+            "text-2xl font-bold font-mono transition-all duration-300",
+            score > 0 ? "text-green-400" : "text-zinc-500"
           )}
         >
           +{score}
@@ -95,7 +103,7 @@ export function DecisionReveal({
   return (
     <div className="flex flex-col items-center gap-6 p-6">
       {/* Title */}
-      <div className="text-sm text-muted-foreground uppercase tracking-wider">
+      <div className="text-sm text-zinc-500">
         {phase === "hidden" && "Awaiting Decisions..."}
         {phase === "revealA" && `${agentA?.name} reveals...`}
         {phase === "revealB" && `${agentB?.name} reveals...`}
@@ -112,7 +120,7 @@ export function DecisionReveal({
           showScore={showScore}
         />
 
-        <div className="text-muted-foreground font-bold">VS</div>
+        <div className="text-zinc-600 font-bold text-lg">VS</div>
 
         <DecisionCard
           agent={agentB}
@@ -127,20 +135,20 @@ export function DecisionReveal({
       {phase === "outcome" && decisionA && decisionB && (
         <div className="text-sm text-center mt-4">
           {decisionA === "split" && decisionB === "split" && (
-            <span className="text-split">Both cooperated! Fair split.</span>
+            <span className="text-green-400">Both cooperated! Fair split.</span>
           )}
           {decisionA === "split" && decisionB === "steal" && (
-            <span className="text-steal">
+            <span className="text-red-400">
               {agentB?.name} betrayed {agentA?.name}!
             </span>
           )}
           {decisionA === "steal" && decisionB === "split" && (
-            <span className="text-steal">
+            <span className="text-red-400">
               {agentA?.name} betrayed {agentB?.name}!
             </span>
           )}
           {decisionA === "steal" && decisionB === "steal" && (
-            <span className="text-muted-foreground">
+            <span className="text-zinc-500">
               Mutual destruction. Nobody wins.
             </span>
           )}

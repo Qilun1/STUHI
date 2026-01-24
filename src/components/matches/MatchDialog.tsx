@@ -17,7 +17,7 @@ export function MatchDialog({ gameId, open, onOpenChange }: MatchDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-3xl h-[80vh] flex flex-col p-0 gap-0"
+        className="max-w-3xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden"
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">

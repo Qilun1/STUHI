@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChatLog } from "./ChatLog";
 import { DecisionReveal } from "./DecisionReveal";
 import { cn } from "@/lib/utils";
+import { Play, Pause, SkipForward, ArrowCounterClockwise, X } from "@phosphor-icons/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type PlaybackPhase =
@@ -107,7 +108,7 @@ export function Reenactment({ gameId, autoPlay = true, onClose }: ReenactmentPro
 
   if (!game) {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
+      <div className="flex items-center justify-center h-64 text-zinc-500">
         Loading game data...
       </div>
     );
@@ -124,37 +125,51 @@ export function Reenactment({ gameId, autoPlay = true, onClose }: ReenactmentPro
     phase.type === "decision" || phase.type === "complete";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-zinc-900/50">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b-2 border-border">
+      <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-gradient-to-b from-zinc-800/20 to-transparent">
         <div className="flex items-center gap-4">
           <Badge variant={(game.agentA?.type as "diplomat") ?? "outline"}>
             {game.agentA?.badge}
           </Badge>
-          <span className="text-muted-foreground text-sm">VS</span>
+          <span className="text-zinc-500 text-sm">vs</span>
           <Badge variant={(game.agentB?.type as "diplomat") ?? "outline"}>
             {game.agentB?.badge}
           </Badge>
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            ROUND {game.roundNumber}
+          <Badge variant="secondary" className="text-xs font-mono">
+            Round {game.roundNumber}
           </Badge>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Trust Info */}
-      <div className="flex items-center justify-between px-4 py-2 bg-elevated text-xs">
-        <span className="text-muted-foreground">
+      <div className="flex items-center justify-between px-4 py-2 bg-zinc-800/20 text-xs">
+        <span className="text-zinc-500">
           {game.agentA?.name}'s trust in {game.agentB?.name}:{" "}
-          <span className={cn(game.trustAtoB >= 0 ? "text-split" : "text-steal")}>
+          <span className={cn(
+            "font-mono font-semibold",
+            game.trustAtoB >= 0 ? "text-green-400" : "text-red-400"
+          )}>
             {game.trustAtoB}
           </span>
         </span>
-        <span className="text-muted-foreground">
+        <span className="text-zinc-500">
           {game.agentB?.name}'s trust in {game.agentA?.name}:{" "}
-          <span className={cn(game.trustBtoA >= 0 ? "text-split" : "text-steal")}>
+          <span className={cn(
+            "font-mono font-semibold",
+            game.trustBtoA >= 0 ? "text-green-400" : "text-red-400"
+          )}>
             {game.trustBtoA}
           </span>
         </span>
@@ -191,7 +206,7 @@ export function Reenactment({ gameId, autoPlay = true, onClose }: ReenactmentPro
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between p-4 border-t-2 border-border bg-surface">
+      <div className="flex items-center justify-between p-4 border-t border-zinc-800/50 bg-zinc-800/20">
         <div className="flex items-center gap-2">
           {phase.type !== "complete" ? (
             <>
@@ -200,29 +215,36 @@ export function Reenactment({ gameId, autoPlay = true, onClose }: ReenactmentPro
                 size="sm"
                 onClick={() => setIsPlaying(!isPlaying)}
               >
-                {isPlaying ? "PAUSE" : "PLAY"}
+                {isPlaying ? (
+                  <Pause className="size-4" weight="fill" />
+                ) : (
+                  <Play className="size-4" weight="fill" />
+                )}
+                {isPlaying ? "Pause" : "Play"}
               </Button>
-              <Button variant="outline" size="sm" onClick={advance}>
-                STEP
+              <Button variant="ghost" size="sm" onClick={advance}>
+                Step
               </Button>
-              <Button variant="outline" size="sm" onClick={skipToEnd}>
-                SKIP
+              <Button variant="ghost" size="sm" onClick={skipToEnd}>
+                <SkipForward className="size-4" weight="fill" />
+                Skip
               </Button>
             </>
           ) : (
             <Button variant="outline" size="sm" onClick={reset}>
-              REPLAY
+              <ArrowCounterClockwise className="size-4" />
+              Replay
             </Button>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Speed:</span>
+          <span className="text-xs text-zinc-500">Speed:</span>
           {[0.5, 1, 2].map((s) => (
             <Button
               key={s}
-              variant={speed === s ? "split" : "outline"}
-              size="sm"
+              variant={speed === s ? "default" : "ghost"}
+              size="xs"
               onClick={() => setSpeed(s)}
               className="w-10"
             >
@@ -230,12 +252,6 @@ export function Reenactment({ gameId, autoPlay = true, onClose }: ReenactmentPro
             </Button>
           ))}
         </div>
-
-        {onClose && (
-          <Button variant="outline" size="sm" onClick={onClose}>
-            CLOSE
-          </Button>
-        )}
       </div>
     </div>
   );

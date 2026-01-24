@@ -3,6 +3,7 @@ import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Play, SpeakerHigh, CircleNotch, ArrowCounterClockwise } from "@phosphor-icons/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 interface VoicePlayerProps {
@@ -103,27 +104,42 @@ export function VoicePlayer({
         size="sm"
         onClick={handlePlay}
         disabled={status === "loading" || status === "playing"}
-        className="w-20"
+        className="gap-1.5"
       >
-        {status === "loading" && "GEN..."}
-        {status === "playing" && "PLAYING"}
-        {status === "idle" && (audioUrl ? "PLAY" : "VOICE")}
-        {status === "error" && "RETRY"}
+        {status === "loading" && (
+          <CircleNotch className="size-4 animate-spin" />
+        )}
+        {status === "playing" && (
+          <SpeakerHigh className="size-4 text-cyan-400" weight="fill" />
+        )}
+        {status === "idle" && !audioUrl && (
+          <SpeakerHigh className="size-4" weight="duotone" />
+        )}
+        {status === "idle" && audioUrl && (
+          <Play className="size-4" weight="fill" />
+        )}
+        {status === "error" && (
+          <ArrowCounterClockwise className="size-4" />
+        )}
+        {status === "loading" && "Generating..."}
+        {status === "playing" && "Playing"}
+        {status === "idle" && (audioUrl ? "Play" : "Voice")}
+        {status === "error" && "Retry"}
       </Button>
 
       {/* Error message */}
       {error && (
-        <span className="text-xs text-steal truncate max-w-[150px]">
+        <span className="text-xs text-red-400 truncate max-w-[150px]">
           {error}
         </span>
       )}
 
       {/* Status indicator */}
       {status === "playing" && (
-        <div className="flex items-center gap-1">
-          <span className="w-1 h-3 bg-split animate-pulse" />
-          <span className="w-1 h-4 bg-split animate-pulse delay-75" />
-          <span className="w-1 h-2 bg-split animate-pulse delay-150" />
+        <div className="flex items-center gap-0.5">
+          <span className="w-0.5 h-3 bg-cyan-400 rounded-full animate-pulse" />
+          <span className="w-0.5 h-4 bg-cyan-400 rounded-full animate-pulse delay-75" />
+          <span className="w-0.5 h-2 bg-cyan-400 rounded-full animate-pulse delay-150" />
         </div>
       )}
     </div>

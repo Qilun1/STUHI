@@ -16,7 +16,7 @@ export function CooperationChart() {
 
   if (!timeline) {
     return (
-      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+      <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
         Loading data...
       </div>
     );
@@ -24,7 +24,7 @@ export function CooperationChart() {
 
   if (timeline.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+      <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
         No rounds completed yet
       </div>
     );
@@ -46,32 +46,35 @@ export function CooperationChart() {
         >
           <defs>
             <linearGradient id="cooperationGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00ff88" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#00ff88" stopOpacity={0} />
+              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
             dataKey="round"
-            tick={{ fill: "#666", fontSize: 10 }}
-            axisLine={{ stroke: "#333" }}
-            tickLine={{ stroke: "#333" }}
+            tick={{ fill: "#71717a", fontSize: 10 }}
+            axisLine={{ stroke: "#27272a" }}
+            tickLine={{ stroke: "#27272a" }}
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fill: "#666", fontSize: 10 }}
-            axisLine={{ stroke: "#333" }}
-            tickLine={{ stroke: "#333" }}
+            tick={{ fill: "#71717a", fontSize: 10 }}
+            axisLine={{ stroke: "#27272a" }}
+            tickLine={{ stroke: "#27272a" }}
             tickFormatter={(value) => `${value}%`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#141414",
-              border: "2px solid #333",
-              borderRadius: 0,
+              backgroundColor: "rgba(17, 17, 19, 0.95)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid #27272a",
+              borderRadius: "8px",
               fontFamily: "JetBrains Mono",
               fontSize: 12,
+              padding: "8px 12px",
             }}
-            labelStyle={{ color: "#999" }}
+            labelStyle={{ color: "#71717a", marginBottom: 4 }}
+            itemStyle={{ color: "#fafafa" }}
             formatter={(value, name) => {
               if (name === "cooperation") return [`${value}%`, "Cooperation"];
               return [String(value), "Betrayals"];
@@ -80,7 +83,7 @@ export function CooperationChart() {
           <Area
             type="monotone"
             dataKey="cooperation"
-            stroke="#00ff88"
+            stroke="#06b6d4"
             strokeWidth={2}
             fill="url(#cooperationGradient)"
           />

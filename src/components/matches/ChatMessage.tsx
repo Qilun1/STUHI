@@ -27,7 +27,7 @@ export function ChatMessage({
     <div
       className={cn(
         "flex gap-3 p-3 transition-all duration-300",
-        isAgentA ? "bg-elevated" : "bg-surface"
+        isAgentA ? "bg-zinc-800/30" : "bg-zinc-900/50"
       )}
     >
       {/* Agent Badge */}
@@ -42,14 +42,14 @@ export function ChatMessage({
 
       {/* Message Content */}
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-muted-foreground mb-1">
+        <div className="text-xs text-zinc-500 mb-1">
           {senderName ?? "Unknown Agent"}
         </div>
-        <div className="text-sm leading-relaxed">
+        <div className="text-sm leading-relaxed text-zinc-200">
           {isTyping ? (
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 text-zinc-500">
               <span className="animate-pulse">Typing</span>
-              <span className="animate-cursor">_</span>
+              <span className="w-0.5 h-3.5 bg-cyan-400 animate-cursor" />
             </span>
           ) : (
             content

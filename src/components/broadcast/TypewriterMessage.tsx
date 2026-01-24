@@ -40,26 +40,27 @@ export function TypewriterMessage({
   return (
     <div
       className={cn(
-        "relative p-6 rounded-2xl bg-surface border border-border/50 animate-fade-in",
-        "before:absolute before:bottom-0 before:w-4 before:h-4 before:bg-surface",
-        isAgentA
-          ? "before:left-6 before:-translate-x-1/2 before:translate-y-1/2 before:rotate-45 before:border-l before:border-b before:border-border/50"
-          : "before:right-6 before:translate-x-1/2 before:translate-y-1/2 before:rotate-45 before:border-r before:border-b before:border-border/50"
+        "relative p-6 rounded-2xl bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50 animate-fade-in shadow-card",
+        isAgentA ? "border-l-2" : "border-r-2"
       )}
+      style={{
+        borderLeftColor: isAgentA ? senderColor : undefined,
+        borderRightColor: !isAgentA ? senderColor : undefined,
+      }}
     >
       {/* Sender name */}
       <div
-        className="text-xs font-semibold mb-2 uppercase tracking-wide"
+        className="text-xs font-semibold mb-2 tracking-wide"
         style={{ color: senderColor }}
       >
         {senderName}
       </div>
 
       {/* Message content */}
-      <div className="text-foreground text-base leading-relaxed min-h-[3rem]">
+      <div className="text-zinc-200 text-base leading-relaxed min-h-[3rem]">
         {displayedText}
         {!isComplete && (
-          <span className="inline-block w-0.5 h-4 bg-foreground ml-0.5 animate-cursor" />
+          <span className="inline-block w-0.5 h-4 bg-cyan-400 ml-0.5 animate-cursor" />
         )}
       </div>
     </div>

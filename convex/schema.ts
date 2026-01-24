@@ -203,4 +203,292 @@ export default defineSchema({
     topAgentScore: v.number(),
     completedAt: v.number(),
   }).index("by_round", ["roundNumber"]),
+
+  // ============================================
+  // NEGOTIATION SIMULATOR TABLES
+  // ============================================
+
+  // Scenarios - the negotiation setup
+  scenarios: defineTable({
+    // Input
+    sourceQuery: v.string(), // "Greenland purchase"
+    partyCount: v.optional(v.number()), // Number of parties (default 2)
+
+    // Generated content
+    title: v.string(),
+    description: v.string(),
+
+    // Research results
+    context: v.string(), // Current situation summary
+    keyFacts: v.array(
+      v.object({
+        fact: v.string(),
+        source: v.optional(v.string()),
+        confidence: v.string(),
+      })
+    ),
+
+    // Parties with personality and evolution support
+    parties: v.array(
+      v.object({
+        name: v.string(),
+        representative: v.string(),
+        publicPosition: v.string(),
+        interests: v.array(v.string()),
+        redLines: v.array(v.string()),
+        batna: v.string(),
+        pressurePoints: v.array(v.string()),
+        powerLevel: v.number(),
+
+        // Research-based personality
+        personality: v.optional(
+          v.object({
+            negotiationStyle: v.string(), // "aggressive", "diplomatic", "principled", etc.
+            communicationTone: v.string(), // "blunt", "formal", "emotional"
+            riskTolerance: v.string(), // "high", "medium", "low"
+            trustLevel: v.string(), // "skeptical", "neutral", "trusting"
+            keyTraits: v.array(v.string()), // ["unpredictable", "deal-maker", "stubborn"]
+            historicalBehavior: v.string(), // "Known for walking away from deals..."
+          })
+        ),
+
+        // Generated strategy prompt (from research)
+        systemPrompt: v.optional(v.string()),
+
+        // For evolution tracking
+        currentGeneration: v.optional(v.number()), // 0 = original research-based
+        evolutionHistory: v.optional(
+          v.array(
+            v.object({
+              generation: v.number(),
+              change: v.string(), // "Became more cooperative"
+              reason: v.string(), // "Lost Round 1 by being too aggressive"
+            })
+          )
+        ),
+
+        // Relationships
+        potentialAllies: v.optional(v.array(v.string())),
+        rivals: v.optional(v.array(v.string())),
+      })
+    ),
+
+    // Possible outcomes
+    possibleOutcomes: v.array(
+      v.object({
+        name: v.string(),
+        description: v.string(),
+        partyAScore: v.number(),
+        partyBScore: v.number(),
+        likelihood: v.string(),
+      })
+    ),
+
+    // Status
+    status: v.string(), // researching | ready | active | completed
+    statusMessage: v.optional(v.string()),
+
+    // Research activity log
+    researchActivity: v.optional(
+      v.array(
+        v.object({
+          type: v.string(), // search | analyze | generate | complete
+          message: v.string(),
+          detail: v.optional(v.string()), // e.g., the actual search query
+          timestamp: v.number(),
+          // Expandable data for click-to-view
+          data: v.optional(
+            v.object({
+              sources: v.optional(
+                v.array(
+                  v.object({
+                    title: v.string(),
+                    url: v.string(),
+                    snippet: v.optional(v.string()),
+                  })
+                )
+              ),
+              items: v.optional(v.array(v.string())),
+            })
+          ),
+        })
+      )
+    ),
+
+    // Analytics (filled after simulations)
+    optimalStrategy: v.optional(v.string()),
+    totalSimulations: v.optional(v.number()),
+
+    createdAt: v.number(),
+  }).index("by_status", ["status"]),
+
+  // Individual negotiation runs
+  negotiations: defineTable({
+    scenarioId: v.id("scenarios"),
+    runNumber: v.number(),
+    roundNumber: v.optional(v.number()), // For evolution rounds: 1, 2, 3...
+
+    // Strategy assignment (legacy 2-party)
+    partyAStrategy: v.optional(v.string()),
+    partyBStrategy: v.optional(v.string()),
+
+    // Multi-party: Party state at start of this negotiation
+    partySnapshots: v.optional(
+      v.array(
+        v.object({
+          partyName: v.string(),
+          generation: v.number(),
+          systemPrompt: v.string(),
+        })
+      )
+    ),
+
+    // State
+    phase: v.string(), // opening | bargaining | closing | resolved | failed
+    currentTurn: v.number(),
+    maxTurns: v.number(),
+    currentSpeakerIndex: v.optional(v.number()), // For multi-party round-robin
+
+    // Alliances formed during negotiation
+    alliances: v.optional(
+      v.array(
+        v.object({
+          members: v.array(v.string()),
+          formedAtTurn: v.number(),
+          purpose: v.string(),
+        })
+      )
+    ),
+
+    // Legacy 2-party outcome
+    outcome: v.optional(
+      v.object({
+        type: v.string(), // deal | walkaway | timeout
+        description: v.string(),
+        finalOffer: v.optional(v.string()),
+        partyAScore: v.number(),
+        partyBScore: v.number(),
+      })
+    ),
+
+    // Multi-party outcome
+    multiPartyOutcome: v.optional(
+      v.object({
+        type: v.string(), // "deal" | "partial" | "collapse"
+        description: v.string(),
+        finalDeal: v.optional(v.string()),
+        partyScores: v.array(
+          v.object({
+            partyName: v.string(),
+            score: v.number(),
+            satisfaction: v.string(),
+            wouldChange: v.string(), // Hint for evolution
+          })
+        ),
+        winningCoalition: v.optional(v.array(v.string())),
+      })
+    ),
+
+    createdAt: v.number(),
+  })
+    .index("by_scenario", ["scenarioId"])
+    .index("by_scenario_and_strategies", [
+      "scenarioId",
+      "partyAStrategy",
+      "partyBStrategy",
+    ])
+    .index("by_scenario_round", ["scenarioId", "roundNumber"]),
+
+  // Individual moves in a negotiation
+  negotiationMoves: defineTable({
+    negotiationId: v.id("negotiations"),
+    turn: v.number(),
+    party: v.string(),
+
+    moveType: v.string(), // offer | counteroffer | concession | demand | threat | accept | reject | walkaway | alliance_proposal | support | challenge
+    content: v.string(), // What they said
+    reasoning: v.string(), // Internal reasoning (not shown)
+
+    emotionalTone: v.string(), // firm | conciliatory | aggressive | neutral | theatrical
+    tacticUsed: v.string(), // anchoring | reciprocity | deadline | appeal_to_fairness | coalition_building | divide_and_conquer | etc
+
+    // Multi-party extensions
+    targetParties: v.optional(v.array(v.string())), // ["all"] or ["specific", "parties"]
+
+    createdAt: v.number(),
+  }).index("by_negotiation", ["negotiationId"]),
+
+  // Aggregated strategy results per scenario
+  strategyResults: defineTable({
+    scenarioId: v.id("scenarios"),
+
+    strategyA: v.string(),
+    strategyB: v.string(),
+
+    // Results
+    runsCompleted: v.number(),
+    partyAWins: v.number(),
+    partyBWins: v.number(),
+    mutualGains: v.number(),
+    failures: v.number(),
+
+    avgPartyAScore: v.number(),
+    avgPartyBScore: v.number(),
+    avgTurnsToResolve: v.number(),
+
+    // Best tactics discovered
+    effectiveTactics: v.array(
+      v.object({
+        tactic: v.string(),
+        successRate: v.number(),
+      })
+    ),
+  }).index("by_scenario", ["scenarioId"]),
+
+  // Track evolution across negotiation rounds
+  negotiationRounds: defineTable({
+    scenarioId: v.id("scenarios"),
+
+    // Round tracking
+    currentRound: v.number(),
+    totalRounds: v.number(),
+
+    // Evolution log
+    evolutionLog: v.array(
+      v.object({
+        round: v.number(),
+        partyName: v.string(),
+        previousApproach: v.string(),
+        newApproach: v.string(),
+        reason: v.string(),
+      })
+    ),
+
+    // Results per round
+    roundResults: v.array(
+      v.object({
+        round: v.number(),
+        negotiationId: v.id("negotiations"),
+        outcomeType: v.string(),
+        rankings: v.array(
+          v.object({
+            partyName: v.string(),
+            score: v.number(),
+            rank: v.number(),
+          })
+        ),
+      })
+    ),
+
+    // Insights discovered
+    insights: v.array(
+      v.object({
+        round: v.number(),
+        insight: v.string(), // "Aggressive approaches failed against principled opponents"
+      })
+    ),
+
+    status: v.string(), // "running" | "paused" | "completed"
+    createdAt: v.number(),
+  }).index("by_scenario", ["scenarioId"]),
 });
