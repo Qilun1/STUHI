@@ -24,10 +24,16 @@ export const runRound = action({
       throw new Error("Simulation is not running");
     }
 
-    // Increment round
-    const roundNumber = await ctx.runMutation(
+    // Increment round (returns { roundNumber, hitLimit })
+    const { roundNumber, hitLimit } = await ctx.runMutation(
       internal.simulation.state.incrementRound
     );
+
+    // If we hit the max rounds limit, stop immediately
+    if (hitLimit) {
+      console.log(`Auto-paused: hit max rounds limit at round ${roundNumber}`);
+      return { roundNumber, gamesPlayed: 0 };
+    }
 
     // Get all active agents
     const agents = await ctx.runQuery(api.agents.queries.list);

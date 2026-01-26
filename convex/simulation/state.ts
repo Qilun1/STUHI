@@ -15,6 +15,7 @@ export const initialize = mutation({
   args: {
     gamesPerRound: v.optional(v.number()),
     evolutionInterval: v.optional(v.number()),
+    maxRounds: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Check if state already exists
@@ -31,6 +32,8 @@ export const initialize = mutation({
       evolutionInterval: args.evolutionInterval ?? 5, // Evolve every 5 rounds
       lastEvolutionRound: 0,
       updatedAt: now,
+      maxRounds: args.maxRounds ?? 100, // Default: auto-pause after 100 rounds
+      roundsThisSession: 0,
     });
   },
 });
@@ -49,6 +52,7 @@ export const start = mutation({
       status: "running",
       startedAt: state.startedAt ?? now,
       updatedAt: now,
+      roundsThisSession: 0, // Reset session counter
     });
   },
 });
@@ -95,15 +99,22 @@ export const incrementRound = internalMutation({
     }
 
     const newRound = state.currentRound + 1;
+    const newSessionRounds = (state.roundsThisSession ?? 0) + 1;
     const now = Date.now();
+
+    // Check if we've hit the max rounds limit
+    const hitLimit = state.maxRounds && newSessionRounds >= state.maxRounds;
 
     await ctx.db.patch(state._id, {
       currentRound: newRound,
+      roundsThisSession: newSessionRounds,
       roundStartedAt: now,
       updatedAt: now,
+      // Auto-pause if we hit the limit
+      ...(hitLimit ? { status: "paused" as const } : {}),
     });
 
-    return newRound;
+    return { roundNumber: newRound, hitLimit: !!hitLimit };
   },
 });
 
@@ -118,6 +129,22 @@ export const recordEvolution = internalMutation({
 
     await ctx.db.patch(state._id, {
       lastEvolutionRound: args.roundNumber,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// Update max rounds limit
+export const setMaxRounds = mutation({
+  args: { maxRounds: v.union(v.number(), v.null()) },
+  handler: async (ctx, args) => {
+    const state = await ctx.db.query("simulationState").first();
+    if (!state) {
+      throw new Error("Simulation not initialized");
+    }
+
+    await ctx.db.patch(state._id, {
+      maxRounds: args.maxRounds ?? undefined,
       updatedAt: Date.now(),
     });
   },

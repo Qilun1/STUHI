@@ -247,6 +247,8 @@ export default function App() {
           <ControlPanel
             simulationStatus={simulationState?.status}
             hasAgents={hasAgents ?? false}
+            maxRounds={simulationState?.maxRounds}
+            roundsThisSession={simulationState?.roundsThisSession}
           />
         </div>
       </header>

@@ -234,6 +234,9 @@ export default defineSchema({
     roundStartedAt: v.optional(v.number()),
     startedAt: v.optional(v.number()),
     updatedAt: v.number(),
+    // Cost protection
+    maxRounds: v.optional(v.number()), // Auto-pause after this many rounds (null = unlimited)
+    roundsThisSession: v.optional(v.number()), // Reset when simulation starts
   }),
 
   // Agent memories about specific opponents
