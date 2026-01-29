@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .mcp.json
+
+# Output files
+games_output.txt
