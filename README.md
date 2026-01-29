@@ -90,60 +90,71 @@ This **work-in-progress** branch focuses on the core split/steal game simulation
 
 ## Prerequisites
 
-- Node.js 18+ or Bun
-- Convex account (free tier available)
-- OpenAI API key
+- Node.js 18+ or [Bun](https://bun.sh)
+- [Convex](https://convex.dev) account (free)
+- [OpenAI](https://platform.openai.com) API key (required)
+- [ElevenLabs](https://elevenlabs.io) API key (optional, for voice)
+
+> 📖 **New to this?** See [SETUP.md](SETUP.md) for detailed instructions on getting API keys.
 
 ---
 
-## Installation
-
-### 1. Clone the Repository
+## Quick Start
 
 ```bash
+# 1. Clone and install
 git clone https://github.com/Qilun1/STUHI.git
 cd STUHI
-git checkout split-steal-wip
-```
-
-### 2. Install Dependencies
-
-```bash
 npm install
-# or
-bun install
-```
 
-### 3. Convex Setup
-
-```bash
+# 2. Set up Convex (creates account & project)
 npx convex dev
-```
 
-This will prompt you to log in and create a new Convex project.
+# 3. Add your OpenAI API key
+npx convex env set OPENAI_API_KEY "sk-your-key-here"
 
-### 4. Set Environment Variables
+# 4. (Optional) Add ElevenLabs for voice
+npx convex env set ELEVEN_LABS_API_KEY "your-key-here"
 
-```bash
-# Required: OpenAI API key
-npx convex env set OPENAI_API_KEY "your-openai-api-key"
-
-# Optional: Voice synthesis
-npx convex env set ELEVEN_LABS_API_KEY "your-eleven-labs-key"
-
-# Optional: Research-based scenarios
-npx convex env set TAVILY_API_KEY "your-tavily-key"
-```
-
-### 5. Start Development Server
-
-```bash
+# 5. Start the app
 npm run dev
 # or
 bun run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open http://localhost:5173 in your browser.
+
+---
+
+## Getting API Keys
+
+### OpenAI (Required)
+
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Sign up or log in
+3. Navigate to **API Keys** → **Create new secret key**
+4. Copy the key (starts with `sk-`)
+5. Run: `npx convex env set OPENAI_API_KEY "sk-your-key"`
+
+> **Cost**: ~$0.01-0.05 per simulation round using GPT-4o-mini. New accounts get $5 free credit.
+
+### Convex (Required, Free)
+
+1. Run `npx convex dev` in the project directory
+2. It will open a browser to log in / create account
+3. Follow prompts to create a new project
+4. Done! Convex is now configured.
+
+### ElevenLabs (Optional)
+
+For voice features (agents speaking):
+
+1. Go to [elevenlabs.io](https://elevenlabs.io)
+2. Sign up and go to **Profile** → **API Keys**
+3. Create and copy your API key
+4. Run: `npx convex env set ELEVEN_LABS_API_KEY "your-key"`
+
+> **Free tier**: 10,000 characters/month. Simulation works without it (just no voice).
 
 ---
 
@@ -220,16 +231,16 @@ This WIP branch includes focused tuning:
 
 ---
 
-## Comparison with Other Branches
+## Troubleshooting
 
-| Feature | split-steal-wip | main | voice-qa |
-|---------|-----------------|------|----------|
-| **Focus** | Core simulation | Full features | Voice interaction |
-| **Agents** | 10 | 20 | 20 |
-| **Voice Features** | No | Yes | Yes |
-| **Agent Profiles** | No | Yes | Yes |
-| **Complexity** | Minimal | Full | Extended |
-| **Purpose** | Experimentation | Production | Feature dev |
+| Issue | Solution |
+|-------|----------|
+| "OPENAI_API_KEY not configured" | Run: `npx convex env set OPENAI_API_KEY "sk-your-key"` |
+| "Convex deployment not found" | Run: `npx convex dev` and follow prompts |
+| Agents not speaking | ElevenLabs key missing or free tier exceeded |
+| Rate limit errors | Wait a minute, or check OpenAI dashboard for limits |
+
+> 📖 See [SETUP.md](SETUP.md) for detailed troubleshooting and cost estimates.
 
 ---
 
