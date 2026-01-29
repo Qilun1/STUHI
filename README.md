@@ -71,53 +71,69 @@ Three detailed tabs for each agent:
 
 ## Prerequisites
 
-- Node.js 18+
-- npm or yarn
-- OpenAI API key
-- ElevenLabs API key (required for voice features)
-- Convex account
+- Node.js 18+ or [Bun](https://bun.sh)
+- [Convex](https://convex.dev) account (free)
+- [OpenAI](https://platform.openai.com) API key (required)
+- [ElevenLabs](https://elevenlabs.io) API key (optional, for voice)
+
+> 📖 **New to this?** See [SETUP.md](SETUP.md) for detailed instructions on getting API keys.
 
 ---
 
-## Installation
-
-### 1. Clone the Repository
+## Quick Start
 
 ```bash
+# 1. Clone and install
 git clone https://github.com/Qilun1/STUHI.git
 cd STUHI
-git checkout feature/voice-qa-agent-profiles
-```
-
-### 2. Install Dependencies
-
-```bash
 npm install
-```
 
-### 3. Environment Setup
-
-Create a `.env.local` file in the root directory:
-
-```dotenv
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
-
-# ElevenLabs Configuration (required for voice features)
-ELEVENLABS_API_KEY=your_elevenlabs_api_key
-```
-
-### 4. Convex Setup
-
-```bash
+# 2. Set up Convex (creates account & project)
 npx convex dev
-```
 
-### 5. Start Development Server
+# 3. Add your OpenAI API key
+npx convex env set OPENAI_API_KEY "sk-your-key-here"
 
-```bash
+# 4. (Optional) Add ElevenLabs for voice
+npx convex env set ELEVEN_LABS_API_KEY "your-key-here"
+
+# 5. Start the app
 npm run dev
 ```
+
+Open http://localhost:5173 in your browser.
+
+---
+
+## Getting API Keys
+
+### OpenAI (Required)
+
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Sign up or log in
+3. Navigate to **API Keys** → **Create new secret key**
+4. Copy the key (starts with `sk-`)
+5. Run: `npx convex env set OPENAI_API_KEY "sk-your-key"`
+
+> **Cost**: ~$0.01-0.05 per simulation round using GPT-4o-mini. New accounts get $5 free credit.
+
+### Convex (Required, Free)
+
+1. Run `npx convex dev` in the project directory
+2. It will open a browser to log in / create account
+3. Follow prompts to create a new project
+4. Done! Convex is now configured.
+
+### ElevenLabs (Optional)
+
+For voice features (agents speaking):
+
+1. Go to [elevenlabs.io](https://elevenlabs.io)
+2. Sign up and go to **Profile** → **API Keys**
+3. Create and copy your API key
+4. Run: `npx convex env set ELEVEN_LABS_API_KEY "your-key"`
+
+> **Free tier**: 10,000 characters/month. Simulation works without it (just no voice).
 
 ---
 
@@ -189,6 +205,32 @@ ElevenLabs generates audio
        ↓
 Audio returned and played via VoiceQueue
 ```
+
+---
+
+## Agent Personalities
+
+| Agent | Strategy | Tactics |
+|-------|----------|---------|
+| 🎩 **Diplomat** | Build trust | References shared history, emphasizes mutual benefit |
+| 🦈 **Shark** | Exploit weakness | Makes emotional appeals, exploits commitment |
+| 😇 **Saint** | Genuine cooperation | Warmth and sincerity, inspires guilt in betrayers |
+| 😤 **Grudger** | Conditional trust | Forgives once, never forgets second offense |
+| 🔬 **Analyst** | Data-driven | Cites statistics, tests honesty through probing |
+| ... | ... | *16 more unique personalities* |
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "OPENAI_API_KEY not configured" | Run: `npx convex env set OPENAI_API_KEY "sk-your-key"` |
+| "Convex deployment not found" | Run: `npx convex dev` and follow prompts |
+| Agents not speaking | ElevenLabs key missing or free tier exceeded |
+| Rate limit errors | Wait a minute, or check OpenAI dashboard for limits |
+
+> 📖 See [SETUP.md](SETUP.md) for detailed troubleshooting and cost estimates.
 
 ---
 
