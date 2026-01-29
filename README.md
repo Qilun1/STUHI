@@ -1,4 +1,4 @@
-# FR8 - Multi-Party Negotiation Simulator
+# Multi-Party Negotiation Simulator
 
 **An AI-powered multi-party negotiation platform** with research-driven personalities, dynamic alliance formation, and evolutionary strategy learning.
 
